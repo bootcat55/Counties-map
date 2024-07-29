@@ -22,8 +22,8 @@ readCsvFile('data/delaware_votes.csv', data => {
     console.log("CSV Data:", data);
 
     // Create an SVG container
-    const width = 500;
-    const height = 300;
+    const width = 1200;
+    const height = 900;
     const svg = d3.select("#chart")
         .append("svg")
         .attr("width", width)
