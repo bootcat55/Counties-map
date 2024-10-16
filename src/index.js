@@ -8,8 +8,8 @@ function readCsvFile(url, callback) {
         // Parse numeric values and ensure all properties are correctly defined
         data.forEach(d => {
             d.FIPS = +d.FIPS;
-            d.County = d.County || 'Unknown'; // Ensure County name is not undefined
-            d.State = d.State || 'Unknown';   // Ensure State label is not undefined
+            d.County = d.County ? d.County.trim() : 'Unknown'; // Trim any spaces from the County name
+            d.State = d.State ? d.State.trim() : 'Unknown';     // Trim any spaces from the State label
             d.Republican = +d.Republican || 0;
             d.Democrat = +d.Democrat || 0;
             d.Population = +d.Population || 0;
@@ -46,14 +46,13 @@ function updateCountyColor(path, county) {
     }
 }
 
-// Function to re-render the selected county
-function reRenderCounty(path, county, projection, pathGenerator) {
-    path.attr("d", pathGenerator)
-        .attr("fill", county.percentage_republican > county.percentage_democrat
-            ? d3.interpolateReds(county.percentage_republican / 100)
-            : d3.interpolateBlues(county.percentage_democrat / 100)
-        )
-        .attr("stroke", "#000");
+// Function to reset a county's votes and color to original values
+function resetCountyVotes(county) {
+    county.Republican = county.originalVotes.Republican;
+    county.Democrat = county.originalVotes.Democrat;
+    county.vote_total = county.Republican + county.Democrat;
+    county.percentage_republican = (county.Republican / county.vote_total) * 100;
+    county.percentage_democrat = (county.Democrat / county.vote_total) * 100;
 }
 
 // Load the CSV data
@@ -105,12 +104,22 @@ readCsvFile('data/delaware_votes.csv', data => {
     const submitButton = updateForm.append("button")
         .text("Update Votes");
 
-// Add the reset button to the update form
+    // Add the reset button to the update form (for a single county)
     const resetButton = updateForm.append("button")
-        .text("Reset")
+        .text("Reset County")
         .style("margin-left", "10px");
 
-// Load GeoJSON for all counties
+    // Add a reset button to reset all counties
+    const resetAllButton = d3.select("body").append("button")
+        .text("Reset All Counties")
+        .style("position", "absolute")
+        .style("top", "20px")
+        .style("left", "20px")
+        .style("padding", "10px")
+        .style("border", "1px solid #ccc")
+        .style("background-color", "#f5f5f5");
+
+    // Load GeoJSON for all counties
     json('data/geojson-counties-fips.json').then(geoData => {
         // Filter GeoJSON to include only Delaware counties using the FIPS codes
         const delawareFipsCodes = data.map(d => d.FIPS);
@@ -182,20 +191,18 @@ readCsvFile('data/delaware_votes.csv', data => {
                 // Update top-right info pane with county details
                 infoPane.html(`County: ${d.properties.County}, ${d.properties.State}<br>
                                Population: ${d.properties.Population.toLocaleString()}<br>
-                               State Total Population: ${stateTotalPopulation.toLocaleString()}<br>
                                Vote Turnout: ${d.properties.turnout.toFixed(2)}%<br>
                                Type: ${countyType}`)
                     .style("display", "block");
 
-                // Show update pane for entering new vote totals
+                // Show update form and autofill with current vote totals
                 updatePane.style("display", "block");
                 repInput.property("value", d.properties.Republican);
                 demInput.property("value", d.properties.Democrat);
 
-                // When the user clicks the submit button
+                // Update button logic
                 submitButton.on("click", function(e) {
-                    e.preventDefault(); // Prevent form submission
-
+                    e.preventDefault();
                     const newRepublicanVotes = +repInput.property("value");
                     const newDemocratVotes = +demInput.property("value");
 
@@ -224,11 +231,7 @@ readCsvFile('data/delaware_votes.csv', data => {
                     e.preventDefault();
 
                     // Reset to original votes stored in 'originalVotes'
-                    d.properties.Republican = d.properties.originalVotes.Republican;
-                    d.properties.Democrat = d.properties.originalVotes.Democrat;
-                    d.properties.vote_total = d.properties.Republican + d.properties.Democrat;
-                    d.properties.percentage_republican = (d.properties.Republican / d.properties.vote_total) * 100;
-                    d.properties.percentage_democrat = (d.properties.Democrat / d.properties.vote_total) * 100;
+                    resetCountyVotes(d.properties);
 
                     // Update the color of the county on the map
                     const selectedCountyPath = svg.selectAll("path").filter(function (f) {
@@ -247,5 +250,20 @@ readCsvFile('data/delaware_votes.csv', data => {
                     updatePane.style("display", "none");
                 });
             });
+        
+        // Reset All Counties button logic
+        resetAllButton.on("click", function(e) {
+            e.preventDefault();
+            // Reset votes and color for all counties
+            filteredGeoData.features.forEach(function(feature) {
+                resetCountyVotes(feature.properties);
+                const countyPath = svg.selectAll("path").filter(function (d) {
+                    return d.properties.FIPS === feature.properties.FIPS;
+                });
+                updateCountyColor(countyPath, feature.properties);
+            });
+        });
     });
 });
+
+
