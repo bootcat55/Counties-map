@@ -68,7 +68,7 @@ readCsvFile('data/delaware_votes.csv', data => {
         .attr("height", height);
 
     // Create an information pane for county details (top-right)
-    const infoPane = d3.select("body").append("div")
+    const infoPane = d3.select("#info-container")
         .attr("class", "info-pane")
         .style("position", "absolute")
         .style("top", "20px")
@@ -79,7 +79,7 @@ readCsvFile('data/delaware_votes.csv', data => {
         .style("display", "none");
 
     // Create an update pane for inputting new vote totals (bottom-right)
-    const updatePane = d3.select("body").append("div")
+    const updatePane = d3.select("#update-container")
         .attr("class", "update-pane")
         .style("position", "absolute")
         .style("bottom", "20px")
@@ -146,7 +146,7 @@ readCsvFile('data/delaware_votes.csv', data => {
         const pathGenerator = d3.geoPath().projection(projection);
 
         // Tooltip div
-        const tooltip = d3.select("body").append("div")
+        const tooltip = d3.select("#tooltip-container")
             .attr("class", "tooltip")
             .style("display", "none");
 
