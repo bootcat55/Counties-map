@@ -28,6 +28,18 @@ function readCsvFile(url, callback) {
     });
 }
 
+// Dataset of state abbreviations and electoral votes
+const stateElectoralVotes = {
+    'AL': 9, 'AK': 3, 'AZ': 11, 'AR': 6, 'CA': 54, 'CO': 10, 'CT': 7,
+    'DE': 3, 'FL': 30, 'GA': 16, 'HI': 4, 'ID': 4, 'IL': 19, 'IN': 11,
+    'IA': 6, 'KS': 6, 'KY': 8, 'LA': 8, 'ME': 4, 'MD': 10, 'MA': 11,
+    'MI': 15, 'MN': 10, 'MS': 6, 'MO': 10, 'MT': 4, 'NE': 5, 'NV': 6,
+    'NH': 4, 'NJ': 14, 'NM': 5, 'NY': 28, 'NC': 16, 'ND': 3, 'OH': 17,
+    'OK': 7, 'OR': 8, 'PA': 19, 'RI': 4, 'SC': 9, 'SD': 3, 'TN': 11,
+    'TX': 40, 'UT': 6, 'VT': 3, 'VA': 13, 'WA': 12, 'WV': 4, 'WI': 10, 
+    'WY': 3, 'DC': 3
+};
+
 // Function to update the vote totals of a clicked county
 function updateVoteTotals(county, newRepublicanVotes, newDemocratVotes) {
     county.Republican = newRepublicanVotes;
@@ -180,6 +192,10 @@ readCsvFile('data/delaware_votes.csv', data => {
                 tooltip.style("display", "none");
             })
             .on("click", function(event, d) {
+
+                 // Fetch the state's electoral votes from the dataset
+                const electoralVotes = stateElectoralVotes[d.properties.State] || 'Unknown';
+
                 // Calculate total population for the state
                 const stateTotalPopulation = data
                     .filter(county => county.State === d.properties.State)
@@ -191,7 +207,9 @@ readCsvFile('data/delaware_votes.csv', data => {
                 // Update top-right info pane with county details
                 infoPane.html(`County: ${d.properties.County}, ${d.properties.State}<br>
                                Population: ${d.properties.Population.toLocaleString()}<br>
+                               State Total Population: ${stateTotalPopulation.toLocaleString()}<br>
                                Vote Turnout: ${d.properties.turnout.toFixed(2)}%<br>
+                               Electoral Votes: ${electoralVotes}<br>
                                Type: ${countyType}`)
                     .style("display", "block");
 
