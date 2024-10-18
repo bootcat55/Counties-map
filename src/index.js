@@ -28,6 +28,28 @@ function readCsvFile(url, callback) {
     });
 }
 
+//USER ADDITION
+//Function to calculate total votes for Republicans and Democrats in the same state
+function calculateStateVotes(selectedCounty, data) {
+    const stateVotes = data.filter(county => county.State === selectedCounty.State);
+
+    const totalRepublicanVotes = stateVotes.reduce((total, county) => total + county.Republican, 0);
+    const totalDemocratVotes = stateVotes.reduce((total, county) => total + county.Democrat, 0);
+    
+    // Get the electoral votes for the state
+    const electoralVotes = stateElectoralVotes[selectedCounty.State] || 0;
+
+    // Determine which party won
+    if (totalRepublicanVotes > totalDemocratVotes) {
+        console.log(`Republicans won this state with ${totalRepublicanVotes} votes and ${electoralVotes} electoral votes.`);
+    } else if (totalDemocratVotes > totalRepublicanVotes) {
+        console.log(`Democrats won this state with ${totalDemocratVotes} votes and ${electoralVotes} electoral votes.`);
+    } else {
+        console.log(`It's a tie with ${totalRepublicanVotes} Republican votes and ${totalDemocratVotes} Democrat votes. Electoral votes: ${electoralVotes}`);
+    }
+}
+//END USER ADDITION
+
 // Dataset of state abbreviations and electoral votes
 const stateElectoralVotes = {
     'AL': 9, 'AK': 3, 'AZ': 11, 'AR': 6, 'CA': 54, 'CO': 10, 'CT': 7,
@@ -201,6 +223,21 @@ readCsvFile('data/delaware_votes.csv', data => {
                     .filter(county => county.State === d.properties.State)
                     .reduce((total, county) => total + county.Population, 0);
 
+                // Calculate total votes for Republicans and Democrats in the state
+                const stateVotes = data.filter(county => county.State === d.properties.State);
+                const totalRepublicanVotes = stateVotes.reduce((total, county) => total + county.Republican, 0);
+                const totalDemocratVotes = stateVotes.reduce((total, county) => total + county.Democrat, 0);
+
+                // Determine the winner
+                let winner = '';
+                if (totalRepublicanVotes > totalDemocratVotes) {
+                    winner = `<span class="winner-republican">Republicans</span> won this state's ${electoralVotes} electoral votes.`;
+                } else if (totalDemocratVotes > totalRepublicanVotes) {
+                    winner = `<span class="winner-democrat">Democrats</span> won this state's ${electoralVotes} electoral votes.`;
+                } else {
+                    winner = `It's too close to call, with the state's ${electoralVotes} electoral votes undecided.`;
+                }
+
                 // Determine rural or urban classification
                 const countyType = d.properties.vote_total > 50000 ? 'Urban' : 'Rural';
 
@@ -208,6 +245,7 @@ readCsvFile('data/delaware_votes.csv', data => {
                 infoPane.html(`County: ${d.properties.County}, ${d.properties.State}<br>
                                Population: ${d.properties.Population.toLocaleString()}<br>
                                State Total Population: ${stateTotalPopulation.toLocaleString()}<br>
+                               <strong>Winner: ${winner}</strong><br>
                                Vote Turnout: ${d.properties.turnout.toFixed(2)}%<br>
                                Electoral Votes: ${electoralVotes}<br>
                                Type: ${countyType}`)
