@@ -1,3 +1,4 @@
+/* Tooltip styling */
 .tooltip {
     position: absolute;
     background: #fff;
@@ -7,6 +8,7 @@
     pointer-events: none; /* Prevents the tooltip from interfering with mouse events */
 }
 
+/* Info pane styling */
 .info-pane {
     font-size: 16px;
     color: #333;
@@ -14,6 +16,7 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* Winning party styling */
 .winner-republican {
     color: red;
     font-weight: bold;
@@ -23,3 +26,40 @@
     color: blue;
     font-weight: bold;
 }
+
+/* Stacked bar chart container styling */
+#election-results-chart {
+    margin: 20px auto;
+    width: 80%;
+    text-align: center;
+    position: relative;
+}
+
+/* Styling for bar chart text labels */
+#election-results-chart text {
+    font-size: 14px;
+    fill: black;
+    font-weight: bold;
+}
+
+/* Styling for bars in the stacked bar chart */
+#election-results-chart rect {
+    stroke: #333;
+    stroke-width: 1px;
+}
+
+/* Styling for the 270-vote marker */
+#election-results-chart line {
+    stroke: black;
+    stroke-width: 2px;
+    stroke-dasharray: 4 2; /* Dashed line styling for the 270 electoral vote marker */
+}
+
+/* Styling for the 270-vote marker label */
+#election-results-chart .marker-label {
+    font-size: 12px;
+    fill: black;
+    font-weight: normal;
+    position: absolute;
+}
+
