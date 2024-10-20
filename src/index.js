@@ -417,5 +417,3 @@ readCsvFile('data/delaware_votes.csv', data => {
         });
     });
 });
-
-
