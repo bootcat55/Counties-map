@@ -363,7 +363,10 @@ readCsvFile('data/delaware_votes.csv', data => {
                         // Update info pane after votes have been updated
                         infoPane.html(`County: ${d.properties.County}, ${d.properties.State}<br>
                                        Population: ${d.properties.Population.toLocaleString()}<br>
+                                       State Total Population: ${stateTotalPopulation.toLocaleString()}<br>
+                                       <strong>Winner: ${winner}</strong><br>
                                        Vote Turnout: ${d.properties.turnout.toFixed(2)}%<br>
+                                       Electoral Votes: ${electoralVotes}<br>
                                        Type: ${countyType}`)
                             .style("display", "block");
 
@@ -388,7 +391,10 @@ readCsvFile('data/delaware_votes.csv', data => {
                     // Reset the info pane with the original totals
                     infoPane.html(`County: ${d.properties.County}, ${d.properties.State}<br>
                                    Population: ${d.properties.Population.toLocaleString()}<br>
+                                   State Total Population: ${stateTotalPopulation.toLocaleString()}<br>
+                                   <strong>Winner: ${winner}</strong><br>
                                    Vote Turnout: ${d.properties.turnout.toFixed(2)}%<br>
+                                   Electoral Votes: ${electoralVotes}<br>
                                    Type: ${countyType}`)
                         .style("display", "block");
 
