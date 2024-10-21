@@ -1745,38 +1745,38 @@ FIPS,County,State,Republican,Democrat,Population
 1129,Washington ,AL,6564,2258,15389
 1131,Wilcox ,AL,1833,4048,10598
 1133,Winston ,AL,10195,974,23547
-2013,Aleutians East,AK,13,,3421
-2016,Aleutians West,AK,16,,5225
-2020,Anchorage,AK,20,,291244
-2050,Bethel,AK,50,,18657
-2060,Bristol Bay,AK,60,,843
-2063,Chugach,AK,,,7103
-2066,Copper River ,AK,,,2616
-2068,Denali,AK,68,,1624
-2070,Dillingham ,AK,70,,4856
-2090,Fairbanks North Star,AK,90,,95660
-2100,Haines ,AK,100,,2078
-2105,Hoonah�Angoon ,AK,105,,2360
-2110,Juneau,AK,110,,32256
-2122,Kenai Peninsula,AK,122,,58801
-2130,Ketchikan Gateway,AK,130,,13953
-2150,Kodiak Island,AK,150,,13100
-2158,Kusilvak,AK,,,8370
-2164,Lake and Peninsula,AK,164,,1474
-2170,Matanuska-Susitna,AK,170,,107068
-2180,Nome ,AK,180,,10050
-2185,North Slope,AK,185,,11032
-2188,Northwest Arctic,AK,188,,7796
-2195,Petersburg,AK,195,,3397
-2198,Prince of Wales � Hyder,AK,198,,5755
-2220,Sitka,AK,220,,8449
-2230,Skagway,AK,230,,1240
-2240,Southeast Fairbanks,AK,240,,6807
-2261,Valdez-Cordova,AK,,1,0
-2270,Wade-Hampton,AK,,1,0
-2275,Wrangell,AK,275,,2125
-2282,Yakutat,AK,282,,663
-2290,Yukon�Koyukuk,AK,290,,5351
+2013,Aleutians East,AK,181,157,3421
+2016,Aleutians West,AK,178,196,5225
+2020,Anchorage,AK,44073,38082,291244
+2050,Bethel,AK,1293,1400,18657
+2060,Bristol Bay,AK,160,131,843
+2063,Chugach,AK,204,112,7103
+2066,Copper River ,AK,150,163,2616
+2068,Denali,AK,1082,911,1624
+2070,Dillingham ,AK,715,593,4856
+2090,Fairbanks North Star,AK,12200,10241,95660
+2100,Haines ,AK,521,700,2078
+2105,Hoonah�Angoon ,AK,100,112,2360
+2110,Juneau,AK,5262,6641,32256
+2122,Kenai Peninsula,AK,6436,5339,58801
+2130,Ketchikan Gateway,AK,2202,2051,13953
+2150,Kodiak Island,AK,2520,2173,13100
+2158,Kusilvak,AK,512,665,8370
+2164,Lake and Peninsula,AK,493,392,1474
+2170,Matanuska-Susitna,AK,15630,12818,107068
+2180,Nome ,AK,900,882,10050
+2185,North Slope,AK,1494,851,11032
+2188,Northwest Arctic,AK,1170,839,7796
+2195,Petersburg,AK,758,840,3397
+2198,Prince of Wales � Hyder,AK,520,580,5755
+2220,Sitka,AK,2577,3105,8449
+2230,Skagway,AK,192,200,1240
+2240,Southeast Fairbanks,AK,1632,1351,6807
+2261,Valdez-Cordova,AK,1370,1090,0
+2270,Wade-Hampton,AK,393,492,0
+2275,Wrangell,AK,354,356,2125
+2282,Yakutat,AK,230,290,663
+2290,Yukon�Koyukuk,AK,60,50,5351
 4001,Apache ,AZ,11442,23293,66026
 4003,Cochise ,AZ,35557,23732,125445
 4005,Coconino ,AZ,27052,44698,145104
