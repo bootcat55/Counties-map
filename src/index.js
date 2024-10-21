@@ -179,7 +179,7 @@ function resetCountyVotes(county) {
 }
 
 // Load the CSV data
-readCsvFile('data/delaware_votes.csv', data => {
+readCsvFile('data/usacounty_votes.csv', data => {
     const electoralResults = calculateElectoralVotes(data);
     drawStackedBarChart(electoralResults);
 
@@ -245,11 +245,11 @@ readCsvFile('data/delaware_votes.csv', data => {
 
     // Load GeoJSON for all counties
     json('data/geojson-counties-fips.json').then(geoData => {
-        // Filter GeoJSON to include only Delaware counties using the FIPS codes
-        const delawareFipsCodes = data.map(d => d.FIPS);
+        // Filter GeoJSON to include only US counties using the FIPS codes
+        const usFipsCodes = data.map(d => d.FIPS);
         const filteredGeoData = {
             type: "FeatureCollection",
-            features: geoData.features.filter(feature => delawareFipsCodes.includes(+feature.id))
+            features: geoData.features.filter(feature => usFipsCodes.includes(+feature.id))
         };
 
         // Merge the CSV data with filtered GeoJSON
