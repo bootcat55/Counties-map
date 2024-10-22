@@ -1,6 +1,8 @@
 import './styles.css';
 import * as d3 from 'd3';
 import { json } from 'd3-fetch';
+import './statemap.js'; // Load the state map after the counties map is loaded
+
 
 // Function to read the CSV file
 function readCsvFile(url, callback) {

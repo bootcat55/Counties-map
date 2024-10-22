@@ -63,3 +63,12 @@
     position: absolute;
 }
 
+#map-container {
+    display: flex;
+}
+
+#county-map, #state-map {
+    width: 600px;
+    height: 900px;
+}
+
