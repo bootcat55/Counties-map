@@ -26,8 +26,8 @@ function createStateMap() {
             .append("path")
             .attr("class", "state")
             .attr("d", pathGenerator)
-            .attr("fill", "blue")
-            .attr("stroke", "#333") // Add border for states
+            .attr("fill", "#d3d3d3")  // Fill the state with light-grey color
+            .attr("stroke", "#333")   // Add a border for states
             .attr("stroke-width", 1.5);
 
         // Tooltip for displaying state information
@@ -35,7 +35,7 @@ function createStateMap() {
             .attr("class", "tooltip")
             .style("display", "none");
 
-        // Add interaction: on hover, show the state name
+        // Add interaction: on hover, show the state name for the entire state area
         svg.selectAll("path.state")
             .on("mouseover", function (event, d) {
                 tooltip.style("display", "block")
@@ -55,3 +55,4 @@ function createStateMap() {
 
 // Call the function to create the state map
 createStateMap();
+
