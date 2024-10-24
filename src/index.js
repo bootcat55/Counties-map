@@ -165,7 +165,8 @@ function updateVoteTotals(county, newRepublicanVotes, newDemocratVotes) {
         detail: {
             state: county.State,
             republicanVotes: county.Republican,
-            democratVotes: county.Democrat
+            democratVotes: county.Democrat,
+            fips: county.FIPS  // Include FIPS code
         }
     });
     window.dispatchEvent(event);
@@ -365,6 +366,13 @@ readCsvFile('data/usacounty_votes.csv', data => {
 
                     if (!isNaN(newRepublicanVotes) && !isNaN(newDemocratVotes)) {
                         updateVoteTotals(d.properties, newRepublicanVotes, newDemocratVotes);
+
+                        console.log("Updated county votes dispatched: ", {
+                            state: d.properties.State,
+                            republicanVotes: newRepublicanVotes,
+                            democratVotes: newDemocratVotes,
+                            fips: d.properties.FIPS
+                        });
 
                         const selectedCountyPath = svg.selectAll("path").filter(function (f) {
                             return f.properties.FIPS === d.properties.FIPS;
