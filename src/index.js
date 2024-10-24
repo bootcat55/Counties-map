@@ -3,7 +3,6 @@ import * as d3 from 'd3';
 import { json } from 'd3-fetch';
 import './statemap.js'; // Load the state map after the counties map is loaded
 
-
 // Function to read the CSV file
 function readCsvFile(url, callback) {
     d3.csv(url).then(data => {
@@ -160,6 +159,16 @@ function updateVoteTotals(county, newRepublicanVotes, newDemocratVotes) {
     county.vote_total = county.Republican + county.Democrat;
     county.percentage_republican = (county.Republican / county.vote_total) * 100;
     county.percentage_democrat = (county.Democrat / county.vote_total) * 100;
+
+    // Emit event to notify state map about vote update
+    const event = new CustomEvent('countyVoteUpdated', {
+        detail: {
+            state: county.State,
+            republicanVotes: county.Republican,
+            democratVotes: county.Democrat
+        }
+    });
+    window.dispatchEvent(event);
 }
 
 // Function to update the map color based on the vote percentages
@@ -419,3 +428,5 @@ readCsvFile('data/usacounty_votes.csv', data => {
         });
     });
 });
+
+
