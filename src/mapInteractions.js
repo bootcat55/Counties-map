@@ -4,14 +4,15 @@ import { json } from 'd3-fetch';
 import { drawStackedBarChart } from './stackedBarChart.js'; // Import the stacked bar chart function
 import { stateElectoralVotes, calculateElectoralVotes } from './electoralVotes.js'; // Import the electoral votes dataset
 import { updateVoteTotals, updateCountyColor, resetCountyVotes } from './voteUpdates.js'; // Import the vote update functions
-import { createInfoPane, createUpdatePane, createTooltip } from './paneSetup.js'; // Import pane setup functions
+import { createInfoPane, createUpdatePane, createTooltip, updateInfoPane, updateTooltip, hideTooltip, createResetAllButton } from './paneSetup.js'; // Import pane setup functions
 import './statemap.js';
 
 export function initializeMapInteractions(data) {
-    // Create the info pane, update pane, and tooltip using paneSetup.js functions
+    // Create the info pane, update pane, tooltip, and reset button using paneSetup.js functions
     const infoPane = createInfoPane();
     const { updatePane, repInput, demInput, submitButton, resetButton } = createUpdatePane();
     const tooltip = createTooltip();
+    const resetAllButton = createResetAllButton();
 
     // Create an SVG container
     const width = 1200;
@@ -20,16 +21,6 @@ export function initializeMapInteractions(data) {
         .append("svg")
         .attr("width", width)
         .attr("height", height);
-
-    // Create the reset all button
-    const resetAllButton = d3.select("body").append("button")
-        .text("Reset All Counties")
-        .style("position", "absolute")
-        .style("top", "20px")
-        .style("left", "20px")
-        .style("padding", "10px")
-        .style("border", "1px solid #ccc")
-        .style("background-color", "#f5f5f5");
 
     // Load GeoJSON for all counties
     json('data/geojson-counties-fips.json').then(geoData => {
@@ -61,20 +52,14 @@ export function initializeMapInteractions(data) {
                 : d3.interpolateBlues(d.properties.percentage_democrat / 100))
             .attr("stroke", "#000")
             .on("mouseover", function(event, d) {
-                tooltip.style("display", "block")
-                    .html(`County: ${d.properties.County}, ${d.properties.State}<br>
-                           <strong><span style="color: red;">Republican:</span></strong> ${d.properties.percentage_republican.toFixed(1)}%<br>
-                           <strong><span style="color: blue;">Democrat:</span></strong> ${d.properties.percentage_democrat.toFixed(1)}%<br>
-                           <strong>Percentage Difference:</strong> ${Math.abs(d.properties.percentage_republican - d.properties.percentage_democrat).toFixed(1)}%`)
-                    .style("left", (event.pageX + 10) + "px")
-                    .style("top", (event.pageY - 20) + "px");
+                updateTooltip(tooltip, d, event); // Use the new updateTooltip function
             })
             .on("mousemove", function(event) {
                 tooltip.style("left", (event.pageX + 10) + "px")
                     .style("top", (event.pageY - 20) + "px");
             })
             .on("mouseout", function() {
-                tooltip.style("display", "none");
+                hideTooltip(tooltip); // Use the new hideTooltip function
             })
             .on("click", function(event, d) {
                 const electoralVotes = stateElectoralVotes[d.properties.State] || 'Unknown';
@@ -91,14 +76,7 @@ export function initializeMapInteractions(data) {
 
                 const countyType = d.properties.vote_total > 50000 ? 'Urban' : 'Rural';
 
-                infoPane.html(`County: ${d.properties.County}, ${d.properties.State}<br>
-                               Population: ${d.properties.Population.toLocaleString()}<br>
-                               State Total Population: ${stateTotalPopulation.toLocaleString()}<br>
-                               <strong>Winner: ${winner}</strong><br>
-                               Vote Turnout: ${d.properties.turnout.toFixed(2)}%<br>
-                               Electoral Votes: ${electoralVotes}<br>
-                               Type: ${countyType}`)
-                    .style("display", "block");
+                updateInfoPane(infoPane, d.properties, stateTotalPopulation, winner, electoralVotes, countyType); // Use the new updateInfoPane function
 
                 updatePane.style("display", "block");
                 repInput.property("value", d.properties.Republican);
@@ -117,14 +95,7 @@ export function initializeMapInteractions(data) {
                         });
                         updateCountyColor(selectedCountyPath, d.properties);
 
-                        infoPane.html(`County: ${d.properties.County}, ${d.properties.State}<br>
-                                       Population: ${d.properties.Population.toLocaleString()}<br>
-                                       State Total Population: ${stateTotalPopulation.toLocaleString()}<br>
-                                       <strong>Winner: ${winner}</strong><br>
-                                       Vote Turnout: ${d.properties.turnout.toFixed(2)}%<br>
-                                       Electoral Votes: ${electoralVotes}<br>
-                                       Type: ${countyType}`)
-                            .style("display", "block");
+                        updateInfoPane(infoPane, d.properties, stateTotalPopulation, winner, electoralVotes, countyType);
 
                         updatePane.style("display", "none");
                     }
@@ -139,14 +110,7 @@ export function initializeMapInteractions(data) {
                     });
                     updateCountyColor(selectedCountyPath, d.properties);
 
-                    infoPane.html(`County: ${d.properties.County}, ${d.properties.State}<br>
-                                   Population: ${d.properties.Population.toLocaleString()}<br>
-                                   State Total Population: ${stateTotalPopulation.toLocaleString()}<br>
-                                   <strong>Winner: ${winner}</strong><br>
-                                   Vote Turnout: ${d.properties.turnout.toFixed(2)}%<br>
-                                   Electoral Votes: ${electoralVotes}<br>
-                                   Type: ${countyType}`)
-                        .style("display", "block");
+                    updateInfoPane(infoPane, d.properties, stateTotalPopulation, winner, electoralVotes, countyType);
 
                     updatePane.style("display", "none");
                 });

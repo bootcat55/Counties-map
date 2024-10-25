@@ -1,3 +1,4 @@
+// paneSetup.js
 import * as d3 from 'd3';
 
 export function createInfoPane() {
@@ -11,6 +12,18 @@ export function createInfoPane() {
         .style("border", "1px solid #ccc")
         .style("background-color", "#f9f9f9")
         .style("display", "none");
+}
+
+export function updateInfoPane(infoPane, county, stateTotalPopulation, winner, electoralVotes, countyType) {
+    // Update the info pane content
+    infoPane.html(`County: ${county.County}, ${county.State}<br>
+                   Population: ${county.Population.toLocaleString()}<br>
+                   State Total Population: ${stateTotalPopulation.toLocaleString()}<br>
+                   <strong>Winner: ${winner}</strong><br>
+                   Vote Turnout: ${county.turnout.toFixed(2)}%<br>
+                   Electoral Votes: ${electoralVotes}<br>
+                   Type: ${countyType}`)
+        .style("display", "block");
 }
 
 export function createUpdatePane() {
@@ -53,4 +66,32 @@ export function createTooltip() {
     return d3.select("#tooltip-container")
         .attr("class", "tooltip")
         .style("display", "none");
+}
+
+export function updateTooltip(tooltip, d, event) {
+    // Update the tooltip content and position
+    tooltip.style("display", "block")
+        .html(`County: ${d.properties.County}, ${d.properties.State}<br>
+               <strong><span style="color: red;">Republican:</span></strong> ${d.properties.percentage_republican.toFixed(1)}%<br>
+               <strong><span style="color: blue;">Democrat:</span></strong> ${d.properties.percentage_democrat.toFixed(1)}%<br>
+               <strong>Percentage Difference:</strong> ${Math.abs(d.properties.percentage_republican - d.properties.percentage_democrat).toFixed(1)}%`)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 20) + "px");
+}
+
+export function hideTooltip(tooltip) {
+    // Hide the tooltip
+    tooltip.style("display", "none");
+}
+
+export function createResetAllButton() {
+    // Create the reset all button
+    return d3.select("body").append("button")
+        .text("Reset All Counties")
+        .style("position", "absolute")
+        .style("top", "20px")
+        .style("left", "20px")
+        .style("padding", "10px")
+        .style("border", "1px solid #ccc")
+        .style("background-color", "#f5f5f5");
 }
