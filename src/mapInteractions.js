@@ -1,10 +1,11 @@
 import './styles.css';
 import * as d3 from 'd3';
 import { json } from 'd3-fetch';
-import { drawStackedBarChart } from './stackedBarChart.js'; // Import the stacked bar chart function
-import { stateElectoralVotes, calculateElectoralVotes } from './electoralVotes.js'; // Import the electoral votes dataset
-import { updateVoteTotals, updateCountyColor, resetCountyVotes } from './voteUpdates.js'; // Import the vote update functions
-import { createInfoPane, createUpdatePane, createTooltip, updateInfoPane, updateTooltip, hideTooltip, createResetAllButton } from './paneSetup.js'; // Import pane setup functions
+import { drawStackedBarChart } from './stackedBarChart.js';
+import { stateElectoralVotes, calculateElectoralVotes } from './electoralVotes.js';
+import { updateVoteTotals, updateCountyColor, resetCountyVotes } from './voteUpdates.js';
+import { createInfoPane, createUpdatePane, createTooltip, updateInfoPane, updateTooltip, hideTooltip, createResetAllButton } from './paneSetup.js';
+import { createZoomControls } from './zoom.js'; // Import the zoom controls
 import './statemap.js';
 
 export function initializeMapInteractions(data) {
@@ -21,6 +22,9 @@ export function initializeMapInteractions(data) {
         .append("svg")
         .attr("width", width)
         .attr("height", height);
+
+    // Add zoom controls for the map
+    createZoomControls(svg, width, height); // Call zoom functionality
 
     // Load GeoJSON for all counties
     json('data/geojson-counties-fips.json').then(geoData => {
@@ -128,4 +132,3 @@ export function initializeMapInteractions(data) {
         });
     });
 }
-
