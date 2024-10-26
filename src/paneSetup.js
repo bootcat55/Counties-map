@@ -89,7 +89,7 @@ export function createResetAllButton() {
     return d3.select("body").append("button")
         .text("Reset All Counties")
         .style("position", "absolute")
-        .style("top", "20px")
+        .style("top", "750px")
         .style("left", "20px")
         .style("padding", "10px")
         .style("border", "1px solid #ccc")
