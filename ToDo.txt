@@ -1,0 +1,21 @@
+3105020266151git 
+
+To Do list:
+
+-Correct Alaska's votes
+-make sure popular votes are updated with user's updated county votes
+-correct north east's electoral vote placements
+-move Hawaii's and Alaska's electoral votes to the correct position
+-try to fix Alaska's vote totals/county totals. May change to house district votes.
+-make sure reset buttons also update the state colors automatically.
+-make sliders for vote data
+
+Far future:
+
+-include "other votes" data in the database in the future.
+-make twitter live feed posts(paid API needed - 100$)
+-include news ticker(maybe)
+-include candidate names
+-make separate dark and light mode(maybe)
+-include satalite/road map layer(maybe)
+-include interactive data by demographic(like cookpolitical.com/swingomater) (maybe)
