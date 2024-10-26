@@ -13,6 +13,7 @@ To Do list:
 Far future:
 
 -include "other votes" data in the database in the future.
+-Add feed of RCP polls and polling data
 -make twitter live feed posts(paid API needed - 100$)
 -include news ticker(maybe)
 -include candidate names
