@@ -1,9 +1,6 @@
 import * as d3 from 'd3';
-import { csv } from 'd3-fetch';
-import { drawStackedBarChart } from './stackedBarChart.js'; // Import the bar chart update function
-import { stateElectoralVotes } from './electoralVotes.js'; // Import state electoral votes
+import { stateElectoralVotes } from './electoralVotes.js';
 
-// Declare voteMap and voteData globally within statemap.js
 let voteMap = new Map();
 let voteData = [];
 
@@ -39,6 +36,27 @@ function createStateMap() {
             const importedNode = document.importNode(data.documentElement, true);
             svgContainer.node().appendChild(importedNode);
 
+            const svg = d3.select(svgContainer.node()).select("svg");
+
+            // Add electoral votes text on each state
+            svg.selectAll("path").each(function() {
+                const stateId = this.getAttribute("id");
+                const electoralVotes = stateElectoralVotes[stateId];
+
+                if (electoralVotes) {
+                    const bbox = this.getBBox();
+                    svg.append("text")
+                        .attr("x", bbox.x + bbox.width / 2)
+                        .attr("y", bbox.y + bbox.height / 2)
+                        .attr("text-anchor", "middle")
+                        .attr("fill", "white") // White color for visibility
+                        .attr("font-size", "14px")
+                        .attr("stroke", "none") // Ensure no border around the text
+                        .attr("font-weight", "bold") // Bold font
+                        .text(electoralVotes);
+                }
+            });
+
             // Add interaction and styling for all states
             d3.select(svgContainer.node())
                 .selectAll("path")
@@ -65,14 +83,14 @@ function createStateMap() {
                     const percentageDemocrat = (votes.totalDemocrat / totalVotes) * 100;
 
                     tooltip.html(`
-                                    <strong>State: ${stateId}</strong><br>
-                                    <strong><span style="color: red;">Republican:</span></strong> ${percentageRepublican.toFixed(1)}%<br>
-                                    <strong><span style="color: blue;">Democrat:</span></strong> ${percentageDemocrat.toFixed(1)}%<br>
-                                    Republican: ${votes ? votes.totalRepublican : 'N/A'}<br>
-                                    Democrat: ${votes ? votes.totalDemocrat : 'N/A'}
-                                  `)
-                        .style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY - 20) + "px");
+                        <strong>State: ${stateId}</strong><br>
+                        <strong><span style="color: red;">Republican:</span></strong> ${percentageRepublican.toFixed(1)}%<br>
+                        <strong><span style="color: blue;">Democrat:</span></strong> ${percentageDemocrat.toFixed(1)}%<br>
+                        Republican: ${votes ? votes.totalRepublican : 'N/A'}<br>
+                        Democrat: ${votes ? votes.totalDemocrat : 'N/A'}
+                    `)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 20) + "px");
 
                     d3.select(this).style("fill", "lightblue");  // Highlight on hover
                 })

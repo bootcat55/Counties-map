@@ -7,6 +7,7 @@ import { updateVoteTotals, updateCountyColor, resetCountyVotes } from './voteUpd
 import { createInfoPane, createUpdatePane, createTooltip, updateInfoPane, updateTooltip, hideTooltip, createResetAllButton } from './paneSetup.js';
 import { createZoomControls } from './zoom.js';
 import './statemap.js';
+import { calculatePopularVote, displayPopularVote } from './popularVote.js';
 
 export function initializeMapInteractions(data) {
     // Create the info pane, update pane, tooltip, and reset button using paneSetup.js functions
@@ -133,3 +134,14 @@ export function initializeMapInteractions(data) {
         });
     });
 }
+
+// Calculate and display the popular vote totals
+d3.csv('data/usacounty_votes.csv').then(data => {
+    data.forEach(d => {
+        d.Republican = +d.Republican;
+        d.Democrat = +d.Democrat;
+    });
+
+    const popularVoteResults = calculatePopularVote(data);
+    displayPopularVote(popularVoteResults);
+});
