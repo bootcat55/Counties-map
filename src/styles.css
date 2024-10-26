@@ -101,3 +101,23 @@ body {
     margin-left: 5px;
     vertical-align: middle;
 }
+
+/* Zoom controls container */
+.zoom-controls {
+    position: absolute;
+    top: 1500px; /* Adjusted to 600 pixels below the map */
+    left: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+/* Zoom button styling */
+.zoom-button {
+    padding: 10px;
+    border: 1px solid #ccc;
+    background-color: #f5f5f5;
+    cursor: pointer;
+}
+.zoom-button:hover {
+    background-color: #e0e0e0;
+}
