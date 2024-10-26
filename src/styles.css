@@ -27,12 +27,20 @@
     font-weight: bold;
 }
 
-/* Stacked bar chart container styling */
+/* Map container layout: state map above county map, aligned to the left */
+#map-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Align maps to the left */
+    margin-top: 20px; /* Optional space between chart and maps */
+}
+
+/* Stacked bar chart styling, centered over the state map and offset 200px left */
 #election-results-chart {
-    margin: 20px auto;
-    width: 80%;
+    width: 600px;
     text-align: center;
-    position: relative;
+    margin: 0 auto 10px auto; /* Center the chart */
+    transform: translateX(-350px); /* Move 200px to the left */
 }
 
 /* Styling for bar chart text labels */
@@ -63,11 +71,19 @@
     position: absolute;
 }
 
-#map-container {
-    display: flex;
+/* Map styling */
+#state-map, #county-map {
+    width: 600px;
+    height: 450px; /* Adjust height if needed */
 }
 
-#county-map, #state-map {
+#county-map {
     width: 600px;
-    height: 900px;
+    height: 450px;
+    margin-top: 100px; /* Lower the map by 200 pixels */
+}
+
+/* Additional styling for spacing */
+#state-map {
+    margin-top: 10px;
 }

@@ -1,11 +1,11 @@
-// stackedBarChart.js
 import * as d3 from 'd3';
+import { stateElectoralVotes } from './electoralVotes.js'; // Import state electoral votes
 
 // Function to draw the stacked bar chart with 270 electoral vote marker
 export function drawStackedBarChart(results) {
     const svgWidth = 600;
     const svgHeight = 100;
-    const svg = d3.select("#election-results-chart")
+    const svg = d3.select("#election-results-chart").html("") // Clear any previous chart
         .append("svg")
         .attr("width", svgWidth)
         .attr("height", svgHeight);
@@ -85,3 +85,29 @@ export function drawStackedBarChart(results) {
         .attr("font-size", "12px")
         .text("270 votes");
 }
+
+// Helper function to calculate electoral results based on updated voteMap
+function calculateElectoralVotesFromMap(voteMap) {
+    let republicanVotes = 0;
+    let democratVotes = 0;
+    let tooCloseToCallVotes = 0;
+
+    voteMap.forEach((votes, state) => {
+        if (votes.totalRepublican > votes.totalDemocrat) {
+            republicanVotes += stateElectoralVotes[state];
+        } else if (votes.totalDemocrat > votes.totalRepublican) {
+            democratVotes += stateElectoralVotes[state];
+        } else {
+            tooCloseToCallVotes += stateElectoralVotes[state];
+        }
+    });
+
+    return { republicanVotes, democratVotes, tooCloseToCallVotes };
+}
+
+// Listen for the stateVoteUpdated event and update the chart
+window.addEventListener('stateVoteUpdated', function(e) {
+    const voteMap = e.detail.voteMap; // Get updated voteMap from the event
+    const electoralResults = calculateElectoralVotesFromMap(voteMap); // Recalculate electoral votes
+    drawStackedBarChart(electoralResults); // Redraw the chart with new data
+});

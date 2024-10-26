@@ -1,9 +1,11 @@
 import * as d3 from 'd3';
-import { csv } from 'd3-fetch'; // To load the CSV data
+import { csv } from 'd3-fetch';
+import { drawStackedBarChart } from './stackedBarChart.js'; // Import the bar chart update function
+import { stateElectoralVotes } from './electoralVotes.js'; // Import state electoral votes
 
 // Declare voteMap and voteData globally within statemap.js
 let voteMap = new Map();
-let voteData = []; // Global variable to hold the original county-level data
+let voteData = [];
 
 // Function to create the US states map
 function createStateMap() {
@@ -13,8 +15,6 @@ function createStateMap() {
             ...d,
             FIPS: +d.FIPS // Ensure FIPS is treated as a number
         }));
-
-        console.log("Loaded voteData:", voteData); // Add this log to check voteData
 
         // Aggregate votes by state
         const stateVotes = d3.rollups(
@@ -34,30 +34,24 @@ function createStateMap() {
             .append("div")  // Create a div to hold the SVG
             .attr("class", "svg-container");
 
-        // Load the external SVG file (e.g., us-states6.svg)
+        // Load the external SVG file for US states
         d3.xml('data/us-states6.svg').then(data => {
-            // Append the loaded SVG to the container
             const importedNode = document.importNode(data.documentElement, true);
             svgContainer.node().appendChild(importedNode);
 
             // Add interaction and styling for all states
             d3.select(svgContainer.node())
-                .selectAll("path")  // Assuming each state is represented by a <path> element in the SVG
+                .selectAll("path")
                 .style("fill", function () {
-                    const stateId = this.getAttribute("id");  // Get the state's abbreviation (e.g., "DE" for Delaware)
+                    const stateId = this.getAttribute("id");
                     const votes = voteMap.get(stateId);
 
-                    if (votes) {
-                        // Color red for Republican majority, blue for Democrat majority
-                        return votes.totalRepublican > votes.totalDemocrat ? "red" : "blue";
-                    } else {
-                        return "#d3d3d3";  // Default color if no vote data is found
-                    }
+                    // Color red for Republican majority, blue for Democrat majority
+                    return votes && votes.totalRepublican > votes.totalDemocrat ? "red" : "blue";
                 })
-                .attr("stroke", "#333")   // Add border for states
+                .attr("stroke", "#333")
                 .attr("stroke-width", 1.5)
                 .on("mouseover", function (event) {
-                    // Tooltip for displaying state information
                     const tooltip = d3.select("#state-tooltip")
                         .attr("class", "tooltip")
                         .style("display", "block");
@@ -109,22 +103,21 @@ function updateStateColor(stateAbbreviation, voteMap) {
             const votes = voteMap.get(stateAbbreviation);
             return votes && votes.totalRepublican > votes.totalDemocrat ? "red" : "blue";
         });
+
+    // Emit event to update the stacked bar chart
+    const event = new CustomEvent('stateVoteUpdated', { detail: { voteMap } });
+    window.dispatchEvent(event);
 }
 
 // Listen for county vote updates and recalculate state totals
 window.addEventListener('countyVoteUpdated', function(e) {
     const { state, republicanVotes, democratVotes, fips } = e.detail;
 
-    console.log("Event received in statemap.js: ", e.detail);
-
     // Find and update the county in voteData
     const countyToUpdate = voteData.find(county => county.FIPS === fips);
     if (countyToUpdate) {
-        console.log("Updating county: ", countyToUpdate);
-        countyToUpdate.Republican = republicanVotes; // Replace with updated Republican votes
-        countyToUpdate.Democrat = democratVotes;    // Replace with updated Democrat votes
-    } else {
-        console.error("County not found in voteData for FIPS: ", fips);
+        countyToUpdate.Republican = republicanVotes; 
+        countyToUpdate.Democrat = democratVotes;    
     }
 
     // Recalculate the total state votes based on the updated voteData
@@ -133,12 +126,10 @@ window.addEventListener('countyVoteUpdated', function(e) {
 
     voteData.forEach(county => {
         if (county.State === state) {
-            stateTotalRepublican += +county.Republican;  // Ensure vote values are numbers
+            stateTotalRepublican += +county.Republican;  
             stateTotalDemocrat += +county.Democrat;
         }
     });
-
-    console.log(`State totals for ${state}: Republican - ${stateTotalRepublican}, Democrat - ${stateTotalDemocrat}`);
 
     // Update the voteMap with the new state totals
     voteMap.set(state, {

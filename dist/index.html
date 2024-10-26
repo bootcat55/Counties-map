@@ -7,13 +7,17 @@
     <link rel="stylesheet" href="/src/styles.css">
 </head>
 <body>
-    <!-- Container for the stacked bar chart -->
+    <!-- Stacked Bar Chart, centered at the top -->
     <div id="election-results-chart"></div>
 
-    <!-- Container for the map -->
-    <div id="chart"></div>
+    <!-- Container for maps, stacked vertically -->
+    <div id="map-container">
+        <!-- State Map positioned above County Map -->
+        <div id="state-map"></div>
+        <div id="county-map"></div>
+    </div>
 
-    <div id="state-map"></div>
+    <!-- Tooltip for state map interactions -->
     <div id="state-tooltip" class="tooltip"></div>
     
     <!-- Container for the info pane -->

@@ -7,7 +7,6 @@ import { updateVoteTotals, updateCountyColor, resetCountyVotes } from './voteUpd
 import { initializeMapInteractions } from './mapInteractions.js'; // Import the map interaction logic
 import './statemap.js';
 
-// Function to read the CSV file
 function readCsvFile(url, callback) {
     d3.csv(url).then(data => {
         data.forEach(d => {
@@ -20,13 +19,20 @@ function readCsvFile(url, callback) {
             d.vote_total = d.Republican + d.Democrat;
             d.percentage_republican = (d.Republican / d.vote_total) * 100 || 0;
             d.percentage_democrat = (d.Democrat / d.vote_total) * 100 || 0;
-            d.turnout = ((d.Population - d.vote_total) / d.Population) * 100 || 0;
 
-            d.originalVotes = {
-                Republican: d.Republican,
-                Democrat: d.Democrat
-            };
+            // Exclude Bedford City from turnout calculation
+            if (d.FIPS !== 51515) {
+                d.turnout = ((d.Population - d.vote_total) / d.Population) * 100 || 0;
+                d.originalVotes = {
+                    Republican: d.Republican,
+                    Democrat: d.Democrat
+                };
+            } else {
+                d.turnout = 0; // Assign zero turnout to Bedford City
+                d.Population = 0; // Exclude Bedford City’s population in other calculations
+            }
         });
+
         callback(data);
     });
 }
