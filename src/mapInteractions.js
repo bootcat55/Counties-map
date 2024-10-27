@@ -12,7 +12,7 @@ import { calculatePopularVote, displayPopularVote } from './popularVote.js';
 export function initializeMapInteractions(data) {
     // Create the info pane, update pane, tooltip, and reset button using paneSetup.js functions
     const infoPane = createInfoPane();
-    const { updatePane, repInput, demInput, submitButton, resetButton } = createUpdatePane();
+    const { updatePane, repInput, demInput, otherInput, submitButton, resetButton } = createUpdatePane();
     const tooltip = createTooltip();
     const resetAllButton = createResetAllButton();
 
@@ -61,7 +61,7 @@ export function initializeMapInteractions(data) {
             .attr("fill", d => d.properties.percentage_republican > d.properties.percentage_democrat
                 ? d3.interpolateReds(d.properties.percentage_republican / 100)
                 : d3.interpolateBlues(d.properties.percentage_democrat / 100))
-            .attr("stroke", "none")  // Remove county borders
+            .attr("stroke", "none")
             .on("mouseover", function(event, d) {
                 updateTooltip(tooltip, d, event);
             })
@@ -75,12 +75,13 @@ export function initializeMapInteractions(data) {
             .on("click", function(event, d) {
                 const electoralVotes = stateElectoralVotes[d.properties.State] || 'Unknown';
                 const stateTotalPopulation = data
-                    .filter(county => county.FIPS !== 51515) // Exclude Bedford City
+                    .filter(county => county.FIPS !== 51515)
                     .reduce((total, county) => total + county.Population, 0);
 
                 const stateVotes = data.filter(county => county.State === d.properties.State && county.FIPS !== 51515);
                 const totalRepublicanVotes = stateVotes.reduce((total, county) => total + county.Republican, 0);
                 const totalDemocratVotes = stateVotes.reduce((total, county) => total + county.Democrat, 0);
+                const totalOtherVotes = stateVotes.reduce((total, county) => total + county.OtherVotes, 0);
 
                 let winner = totalRepublicanVotes > totalDemocratVotes 
                     ? `<span class="winner-republican">Republicans</span> won this state's ${electoralVotes} electoral votes.` 
@@ -93,14 +94,16 @@ export function initializeMapInteractions(data) {
                 updatePane.style("display", "block");
                 repInput.property("value", d.properties.Republican);
                 demInput.property("value", d.properties.Democrat);
+                otherInput.property("value", d.properties.OtherVotes);
 
                 submitButton.on("click", function(e) {
                     e.preventDefault();
                     const newRepublicanVotes = +repInput.property("value");
                     const newDemocratVotes = +demInput.property("value");
+                    const newOtherVotes = +otherInput.property("value");  // Capture "Other Votes" input
 
-                    if (!isNaN(newRepublicanVotes) && !isNaN(newDemocratVotes)) {
-                        updateVoteTotals(d.properties, newRepublicanVotes, newDemocratVotes);
+                    if (!isNaN(newRepublicanVotes) && !isNaN(newDemocratVotes) && !isNaN(newOtherVotes)) {
+                        updateVoteTotals(d.properties, newRepublicanVotes, newDemocratVotes, newOtherVotes);
 
                         const selectedCountyPath = svg.selectAll("path").filter(f => f.properties.FIPS === d.properties.FIPS || f.properties.FIPS === 51515);
                         updateCountyColor(selectedCountyPath, d.properties);
@@ -140,6 +143,7 @@ d3.csv('data/usacounty_votes.csv').then(data => {
     data.forEach(d => {
         d.Republican = +d.Republican;
         d.Democrat = +d.Democrat;
+        d.OtherVotes = +d['Other Votes'];
     });
 
     const popularVoteResults = calculatePopularVote(data);

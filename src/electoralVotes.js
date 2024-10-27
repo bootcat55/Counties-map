@@ -26,7 +26,7 @@ export const stateElectoralVotes2024 = {
 export function calculateElectoralVotes(data) {
     let republicanVotes = 0;
     let democratVotes = 0;
-    let tooCloseToCallVotes = 0; // Add a new variable for tied electoral votes
+    let tooCloseToCallVotes = 0;
 
     const states = Array.from(new Set(data.map(d => d.State)));
 
@@ -34,14 +34,15 @@ export function calculateElectoralVotes(data) {
         const stateVotes = data.filter(d => d.State === state);
         const stateTotalRepublican = d3.sum(stateVotes, d => d.Republican);
         const stateTotalDemocrat = d3.sum(stateVotes, d => d.Democrat);
+        const stateTotalOther = d3.sum(stateVotes, d => d.OtherVotes);  // Include Other Votes in total
+        const stateTotalVotes = stateTotalRepublican + stateTotalDemocrat + stateTotalOther;
 
-        // Allocate electoral votes
+        // Allocate electoral votes based on majority between Republican and Democrat
         if (stateTotalRepublican > stateTotalDemocrat) {
             republicanVotes += stateElectoralVotes[state];
         } else if (stateTotalDemocrat > stateTotalRepublican) {
             democratVotes += stateElectoralVotes[state];
         } else {
-            // If it's a tie, add votes to "too close to call"
             tooCloseToCallVotes += stateElectoralVotes[state];
         }
     });
