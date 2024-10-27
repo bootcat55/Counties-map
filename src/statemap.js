@@ -1,9 +1,10 @@
 import * as d3 from 'd3';
 import { stateElectoralVotes } from './electoralVotes.js';
 
-// Global vote data map and color toggle for each state
+// Global vote data map, color toggle, and tracking of last updates
 export let voteMap = new Map();
 export let stateColorToggle = new Map();
+export let stateLastUpdated = new Map(); // Track last update type
 let voteData = [];
 
 // Function to create the US states map
@@ -52,7 +53,7 @@ export function createStateMap() {
                         .attr("fill", "white")
                         .attr("font-size", "14px")
                         .attr("font-weight", "bold")
-                        .attr("stroke", "none")  // Ensure no border
+                        .attr("stroke", "none")
                         .attr("stroke-width", 0)
                         .text(electoralVotes);
                 }
@@ -83,6 +84,7 @@ export function createStateMap() {
 
                     d3.select(this).style("fill", newColor);
                     stateColorToggle.set(stateId, newColor);
+                    stateLastUpdated.set(stateId, 'override'); // Mark last update as override
 
                     // Dispatch color toggle event
                     const toggleEvent = new CustomEvent('stateColorToggled', { detail: { voteMap, stateColorToggle } });
@@ -109,19 +111,22 @@ export function createStateMap() {
                     .style("left", (event.pageX + 10) + "px")
                     .style("top", (event.pageY - 20) + "px");
 
-                    d3.select(this).style("fill", "lightblue");
+                    d3.select(this).style("fill", "lightblue");  // Temporary color on mouseover
                 })
                 .on("mouseout", function () {
                     d3.select("#state-tooltip").style("display", "none");
 
                     const stateId = this.getAttribute("id");
-                    const overrideColor = stateColorToggle.get(stateId);
 
-                    if (overrideColor) {
-                        d3.select(this).style("fill", overrideColor);
+                    // Determine which color to apply based on the last update
+                    if (stateLastUpdated.get(stateId) === 'override' && stateColorToggle.has(stateId)) {
+                        // Apply override color if it was the last update
+                        d3.select(this).style("fill", stateColorToggle.get(stateId));
                     } else {
+                        // Otherwise, apply the color based on vote data
                         const votes = voteMap.get(stateId);
-                        d3.select(this).style("fill", votes.totalRepublican > votes.totalDemocrat ? "red" : "blue");
+                        const defaultColor = votes.totalRepublican > votes.totalDemocrat ? "red" : "blue";
+                        d3.select(this).style("fill", defaultColor);
                     }
                 });
         });
@@ -137,6 +142,8 @@ export function updateStateColor(stateAbbreviation, voteMap) {
             const votes = voteMap.get(stateAbbreviation);
             return votes && votes.totalRepublican > votes.totalDemocrat ? "red" : "blue";
         });
+
+    stateLastUpdated.set(stateAbbreviation, 'voteUpdate'); // Mark last update as vote update
 
     const event = new CustomEvent('stateVoteUpdated', { detail: { voteMap } });
     window.dispatchEvent(event);
@@ -172,3 +179,4 @@ window.addEventListener('countyVoteUpdated', function(e) {
 
 // Initialize the state map
 createStateMap();
+

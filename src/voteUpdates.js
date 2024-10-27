@@ -1,4 +1,6 @@
 import * as d3 from 'd3';
+import { calculatePopularVote, displayPopularVote } from './popularVote.js';
+import { voteMap, stateColorToggle } from './statemap.js'; // Import stateColorToggle and voteMap
 
 // Function to update the vote totals of a clicked county
 export function updateVoteTotals(county, newRepublicanVotes, newDemocratVotes, newOtherVotes) {
@@ -24,11 +26,25 @@ export function updateVoteTotals(county, newRepublicanVotes, newDemocratVotes, n
         }
     });
     window.dispatchEvent(event);
+
+    // Check if this county update results in a definitive color for the state
+    const state = county.State;
+    const stateVotes = voteMap.get(state);
+    if (stateVotes && stateVotes.totalRepublican !== stateVotes.totalDemocrat) {
+        // Remove override if the state now has a clear majority based on votes
+        stateColorToggle.delete(state);
+    }
+
+    // Recalculate and display popular vote totals
+    recalculateAndDisplayPopularVote();
+
+    // Dispatch an event to update the stacked bar chart with vote-based color changes
+    const chartUpdateEvent = new Event('stateColorChangedByVotes');
+    window.dispatchEvent(chartUpdateEvent);
 }
 
 // Function to update the map color based on the vote percentages
 export function updateCountyColor(path, county) {
-    // Determine the fill color based on updated percentages
     if (county.percentage_republican > county.percentage_democrat) {
         path.attr("fill", d3.interpolateReds(county.percentage_republican / 100));
     } else if (county.percentage_democrat > county.percentage_republican) {
@@ -47,4 +63,21 @@ export function resetCountyVotes(county) {
     county.percentage_republican = county.vote_total ? (county.Republican / county.vote_total) * 100 : 0;
     county.percentage_democrat = county.vote_total ? (county.Democrat / county.vote_total) * 100 : 0;
     county.percentage_other = county.vote_total ? (county.OtherVotes / county.vote_total) * 100 : 0;
+
+    // Recalculate and display popular vote totals after reset
+    recalculateAndDisplayPopularVote();
+}
+
+// Helper function to recalculate and display the popular vote
+function recalculateAndDisplayPopularVote() {
+    d3.csv('data/usacounty_votes.csv').then(data => {
+        data.forEach(d => {
+            d.Republican = +d.Republican;
+            d.Democrat = +d.Democrat;
+            d.OtherVotes = +d['Other Votes'];
+        });
+
+        const popularVoteResults = calculatePopularVote(data);
+        displayPopularVote(popularVoteResults);
+    });
 }

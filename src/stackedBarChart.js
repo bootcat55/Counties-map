@@ -2,7 +2,7 @@ import * as d3 from 'd3';
 import { stateElectoralVotes } from './electoralVotes.js';
 import { voteMap, stateColorToggle } from './statemap.js';
 
-// Function to draw the stacked bar chart with 270 electoral vote marker
+// Function to draw the stacked bar chart with a 270 electoral vote marker
 export function drawStackedBarChart(results) {
     const svgWidth = 600;
     const svgHeight = 100;
@@ -13,61 +13,58 @@ export function drawStackedBarChart(results) {
 
     const totalVotes = results.republicanVotes + results.democratVotes + results.tooCloseToCallVotes;
 
-    // Scale for bar lengths
     const xScale = d3.scaleLinear()
         .domain([0, totalVotes])
         .range([0, svgWidth]);
 
-    // Draw Democrat bar (on the left side)
+    // Draw Democrat bar (blue)
     svg.append("rect")
         .attr("x", 0)
         .attr("y", 20)
-        .attr("width", xScale(results.democratVotes)) // Democrat votes on the left
+        .attr("width", xScale(results.democratVotes))
         .attr("height", 30)
         .attr("fill", "blue");
 
-    // Draw "too close to call" bar (next to Democrat bar, in the middle)
+    // Draw "Too Close to Call" bar (purple)
     svg.append("rect")
-        .attr("x", xScale(results.democratVotes)) // Start after Democrats
+        .attr("x", xScale(results.democratVotes))
         .attr("y", 20)
-        .attr("width", xScale(results.tooCloseToCallVotes)) // Tied votes in the middle
+        .attr("width", xScale(results.tooCloseToCallVotes))
         .attr("height", 30)
         .attr("fill", "purple");
 
-    // Draw Republican bar (next to "too close to call" bar)
+    // Draw Republican bar (red)
     svg.append("rect")
-        .attr("x", xScale(results.democratVotes) + xScale(results.tooCloseToCallVotes)) // Republicans start after ties
+        .attr("x", xScale(results.democratVotes) + xScale(results.tooCloseToCallVotes))
         .attr("y", 20)
-        .attr("width", xScale(results.republicanVotes)) // Republicans on the right
+        .attr("width", xScale(results.republicanVotes))
         .attr("height", 30)
         .attr("fill", "red");
 
-    // Add Democrat label with electoral votes (center of Democrat bar)
+    // Add labels for each section
     svg.append("text")
-        .attr("x", xScale(results.democratVotes) / 2) // Center label in the bar
-        .attr("y", 15) // Move the label slightly up
+        .attr("x", xScale(results.democratVotes) / 2)
+        .attr("y", 15)
         .attr("text-anchor", "middle")
         .text(`Democrat: ${results.democratVotes} votes`);
 
-    // Add "too close to call" label (center of purple bar)
     if (results.tooCloseToCallVotes > 0) {
         svg.append("text")
-            .attr("x", xScale(results.democratVotes) + (xScale(results.tooCloseToCallVotes) / 2)) // Center label in the purple bar
-            .attr("y", 15) // Move the label slightly up
+            .attr("x", xScale(results.democratVotes) + (xScale(results.tooCloseToCallVotes) / 2))
+            .attr("y", 15)
             .attr("text-anchor", "middle")
             .text(`Too close to call: ${results.tooCloseToCallVotes} votes`);
     }
 
-    // Add Republican label with electoral votes (center of Republican bar)
     svg.append("text")
-        .attr("x", xScale(results.democratVotes) + xScale(results.tooCloseToCallVotes) + (xScale(results.republicanVotes) / 2)) // Center label in the bar
-        .attr("y", 15) // Move the label slightly up
+        .attr("x", xScale(results.democratVotes) + xScale(results.tooCloseToCallVotes) + (xScale(results.republicanVotes) / 2))
+        .attr("y", 15)
         .attr("text-anchor", "middle")
         .text(`Republican: ${results.republicanVotes} votes`);
 
     // Add 270 electoral vote marker
     const electoralThreshold = 270;
-    const markerX = xScale(electoralThreshold); // Position at 270 votes
+    const markerX = xScale(electoralThreshold);
 
     svg.append("line")
         .attr("x1", markerX)
@@ -76,9 +73,8 @@ export function drawStackedBarChart(results) {
         .attr("y2", 70)
         .attr("stroke", "black")
         .attr("stroke-width", 2)
-        .attr("stroke-dasharray", "4 2"); // Dashed line for 270 votes
+        .attr("stroke-dasharray", "4 2");
 
-    // Add label for 270 marker
     svg.append("text")
         .attr("x", markerX + 5)
         .attr("y", 10)
@@ -87,39 +83,50 @@ export function drawStackedBarChart(results) {
         .text("270 votes");
 }
 
-// Helper function to calculate electoral results based on updated voteMap and color toggle
+// Helper function to calculate electoral results based on the current state color
 function calculateElectoralVotesFromMap(voteMap, stateColorToggle) {
     let republicanVotes = 0;
     let democratVotes = 0;
     let tooCloseToCallVotes = 0;
 
     voteMap.forEach((votes, state) => {
-        const toggleColor = stateColorToggle.get(state);
-        
-        if (toggleColor === "red") {
+        // Check for a manual override color
+        const overrideColor = stateColorToggle.get(state);
+
+        if (overrideColor === "red") {
             republicanVotes += stateElectoralVotes[state];
-        } else if (toggleColor === "blue") {
+        } else if (overrideColor === "blue") {
             democratVotes += stateElectoralVotes[state];
-        } else if (toggleColor === "gray" || votes.totalRepublican === votes.totalDemocrat) {
+        } else if (overrideColor === "gray") {
             tooCloseToCallVotes += stateElectoralVotes[state];
-        } else if (votes.totalRepublican > votes.totalDemocrat) {
-            republicanVotes += stateElectoralVotes[state];
         } else {
-            democratVotes += stateElectoralVotes[state];
+            // No override, use actual vote comparison
+            if (votes.totalRepublican > votes.totalDemocrat) {
+                republicanVotes += stateElectoralVotes[state];
+            } else if (votes.totalDemocrat > votes.totalRepublican) {
+                democratVotes += stateElectoralVotes[state];
+            } else {
+                tooCloseToCallVotes += stateElectoralVotes[state];
+            }
         }
     });
 
     return { republicanVotes, democratVotes, tooCloseToCallVotes };
 }
 
-// Listen for the stateVoteUpdated event and update the chart
-window.addEventListener('stateVoteUpdated', function() {
+// Listen for both vote-based and override-based state color changes
+window.addEventListener('countyVoteUpdated', function() {
     const electoralResults = calculateElectoralVotesFromMap(voteMap, stateColorToggle);
     drawStackedBarChart(electoralResults);
 });
 
-// Listen for the stateColorToggled event from the map to update the chart
 window.addEventListener('stateColorToggled', function() {
+    const electoralResults = calculateElectoralVotesFromMap(voteMap, stateColorToggle);
+    drawStackedBarChart(electoralResults);
+});
+
+// New listener to update the chart whenever state colors change due to county vote updates
+window.addEventListener('stateColorChangedByVotes', function() {
     const electoralResults = calculateElectoralVotesFromMap(voteMap, stateColorToggle);
     drawStackedBarChart(electoralResults);
 });
