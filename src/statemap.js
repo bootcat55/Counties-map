@@ -52,6 +52,8 @@ export function createStateMap() {
                         .attr("fill", "white")
                         .attr("font-size", "14px")
                         .attr("font-weight", "bold")
+                        .attr("stroke", "none")  // Ensure no border
+                        .attr("stroke-width", 0)
                         .text(electoralVotes);
                 }
             });
