@@ -10,13 +10,11 @@ import './statemap.js';
 import { calculatePopularVote, displayPopularVote } from './popularVote.js';
 
 export function initializeMapInteractions(data) {
-    // Create the info pane, update pane, tooltip, and reset button using paneSetup.js functions
     const infoPane = createInfoPane();
     const { updatePane, repInput, demInput, otherInput, submitButton, resetButton } = createUpdatePane();
     const tooltip = createTooltip();
     const resetAllButton = createResetAllButton();
 
-    // Create an SVG container
     const width = 1200;
     const height = 900;
     const svg = d3.select("#county-map")
@@ -24,10 +22,8 @@ export function initializeMapInteractions(data) {
         .attr("width", width)
         .attr("height", height);
 
-    // Add zoom controls for the map
     createZoomControls(svg, width, height);
 
-    // Load GeoJSON for all counties
     json('data/geojson-counties-fips.json').then(geoData => {
         const usFipsCodes = data.map(d => d.FIPS);
         const filteredGeoData = {
@@ -35,12 +31,11 @@ export function initializeMapInteractions(data) {
             features: geoData.features.filter(feature => usFipsCodes.includes(+feature.id))
         };
 
-        // Apply Bedford County's data to Bedford City
         filteredGeoData.features.forEach(feature => {
-            if (+feature.id === 51515) { // Bedford City
+            if (+feature.id === 51515) {
                 const bedfordCountyData = data.find(d => d.FIPS === 51019);
                 if (bedfordCountyData) {
-                    feature.properties = { ...bedfordCountyData, FIPS: 51515 }; // Bedford City's FIPS with Bedford County's data
+                    feature.properties = { ...bedfordCountyData, FIPS: 51515 };
                 }
             } else {
                 const county = data.find(d => d.FIPS === +feature.id);
@@ -73,23 +68,13 @@ export function initializeMapInteractions(data) {
                 hideTooltip(tooltip);
             })
             .on("click", function(event, d) {
-                const electoralVotes = stateElectoralVotes[d.properties.State] || 'Unknown';
                 const stateTotalPopulation = data
                     .filter(county => county.FIPS !== 51515)
                     .reduce((total, county) => total + county.Population, 0);
 
-                const stateVotes = data.filter(county => county.State === d.properties.State && county.FIPS !== 51515);
-                const totalRepublicanVotes = stateVotes.reduce((total, county) => total + county.Republican, 0);
-                const totalDemocratVotes = stateVotes.reduce((total, county) => total + county.Democrat, 0);
-                const totalOtherVotes = stateVotes.reduce((total, county) => total + county.OtherVotes, 0);
-
-                let winner = totalRepublicanVotes > totalDemocratVotes 
-                    ? `<span class="winner-republican">Republicans</span> won this state's ${electoralVotes} electoral votes.` 
-                    : `<span class="winner-democrat">Democrats</span> won this state's ${electoralVotes} electoral votes.`;
-
                 const countyType = d.properties.vote_total > 50000 ? 'Urban' : 'Rural';
 
-                updateInfoPane(infoPane, d.properties, stateTotalPopulation, winner, electoralVotes, countyType);
+                updateInfoPane(infoPane, d.properties, stateTotalPopulation, countyType);
 
                 updatePane.style("display", "block");
                 repInput.property("value", d.properties.Republican);
@@ -100,7 +85,7 @@ export function initializeMapInteractions(data) {
                     e.preventDefault();
                     const newRepublicanVotes = +repInput.property("value");
                     const newDemocratVotes = +demInput.property("value");
-                    const newOtherVotes = +otherInput.property("value");  // Capture "Other Votes" input
+                    const newOtherVotes = +otherInput.property("value");
 
                     if (!isNaN(newRepublicanVotes) && !isNaN(newDemocratVotes) && !isNaN(newOtherVotes)) {
                         updateVoteTotals(d.properties, newRepublicanVotes, newDemocratVotes, newOtherVotes);
@@ -108,7 +93,7 @@ export function initializeMapInteractions(data) {
                         const selectedCountyPath = svg.selectAll("path").filter(f => f.properties.FIPS === d.properties.FIPS || f.properties.FIPS === 51515);
                         updateCountyColor(selectedCountyPath, d.properties);
 
-                        updateInfoPane(infoPane, d.properties, stateTotalPopulation, winner, electoralVotes, countyType);
+                        updateInfoPane(infoPane, d.properties, stateTotalPopulation, countyType);
 
                         updatePane.style("display", "none");
                     }
@@ -121,7 +106,7 @@ export function initializeMapInteractions(data) {
                     const selectedCountyPath = svg.selectAll("path").filter(f => f.properties.FIPS === d.properties.FIPS || f.properties.FIPS === 51515);
                     updateCountyColor(selectedCountyPath, d.properties);
 
-                    updateInfoPane(infoPane, d.properties, stateTotalPopulation, winner, electoralVotes, countyType);
+                    updateInfoPane(infoPane, d.properties, stateTotalPopulation, countyType);
 
                     updatePane.style("display", "none");
                 });
@@ -138,7 +123,6 @@ export function initializeMapInteractions(data) {
     });
 }
 
-// Calculate and display the popular vote totals
 d3.csv('data/usacounty_votes.csv').then(data => {
     data.forEach(d => {
         d.Republican = +d.Republican;

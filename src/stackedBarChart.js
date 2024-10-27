@@ -1,5 +1,6 @@
 import * as d3 from 'd3';
-import { stateElectoralVotes } from './electoralVotes.js'; // Import state electoral votes
+import { stateElectoralVotes } from './electoralVotes.js';
+import { voteMap, stateColorToggle } from './statemap.js';
 
 // Function to draw the stacked bar chart with 270 electoral vote marker
 export function drawStackedBarChart(results) {
@@ -86,19 +87,25 @@ export function drawStackedBarChart(results) {
         .text("270 votes");
 }
 
-// Helper function to calculate electoral results based on updated voteMap
-function calculateElectoralVotesFromMap(voteMap) {
+// Helper function to calculate electoral results based on updated voteMap and color toggle
+function calculateElectoralVotesFromMap(voteMap, stateColorToggle) {
     let republicanVotes = 0;
     let democratVotes = 0;
     let tooCloseToCallVotes = 0;
 
     voteMap.forEach((votes, state) => {
-        if (votes.totalRepublican > votes.totalDemocrat) {
+        const toggleColor = stateColorToggle.get(state);
+        
+        if (toggleColor === "red") {
             republicanVotes += stateElectoralVotes[state];
-        } else if (votes.totalDemocrat > votes.totalRepublican) {
+        } else if (toggleColor === "blue") {
             democratVotes += stateElectoralVotes[state];
-        } else {
+        } else if (toggleColor === "gray" || votes.totalRepublican === votes.totalDemocrat) {
             tooCloseToCallVotes += stateElectoralVotes[state];
+        } else if (votes.totalRepublican > votes.totalDemocrat) {
+            republicanVotes += stateElectoralVotes[state];
+        } else {
+            democratVotes += stateElectoralVotes[state];
         }
     });
 
@@ -106,8 +113,13 @@ function calculateElectoralVotesFromMap(voteMap) {
 }
 
 // Listen for the stateVoteUpdated event and update the chart
-window.addEventListener('stateVoteUpdated', function(e) {
-    const voteMap = e.detail.voteMap; // Get updated voteMap from the event
-    const electoralResults = calculateElectoralVotesFromMap(voteMap); // Recalculate electoral votes
-    drawStackedBarChart(electoralResults); // Redraw the chart with new data
+window.addEventListener('stateVoteUpdated', function() {
+    const electoralResults = calculateElectoralVotesFromMap(voteMap, stateColorToggle);
+    drawStackedBarChart(electoralResults);
+});
+
+// Listen for the stateColorToggled event from the map to update the chart
+window.addEventListener('stateColorToggled', function() {
+    const electoralResults = calculateElectoralVotesFromMap(voteMap, stateColorToggle);
+    drawStackedBarChart(electoralResults);
 });

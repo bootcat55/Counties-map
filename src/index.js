@@ -2,8 +2,8 @@ import './styles.css';
 import * as d3 from 'd3';
 import { json } from 'd3-fetch';
 import { drawStackedBarChart } from './stackedBarChart.js';
-import { stateElectoralVotes, calculateElectoralVotes } from './electoralVotes.js';
-import { updateVoteTotals, updateCountyColor, resetCountyVotes } from './voteUpdates.js';
+import { calculateElectoralVotes } from './voteLogic.js';
+import { updateVoteTotals, resetCountyVotes, calculateCountyVotes } from './voteLogic.js';
 import { initializeMapInteractions } from './mapInteractions.js';
 import './statemap.js';
 
@@ -11,16 +11,15 @@ function readCsvFile(url, callback) {
     d3.csv(url).then(data => {
         data.forEach(d => {
             d.FIPS = +d.FIPS;
-            d.County = d.County ? d.County.trim() : 'Unknown'; 
-            d.State = d.State ? d.State.trim() : 'Unknown';  
+            d.County = d.County ? d.County.trim() : 'Unknown';
+            d.State = d.State ? d.State.trim() : 'Unknown';
             d.Republican = +d.Republican || 0;
             d.Democrat = +d.Democrat || 0;
-            d.OtherVotes = +d['Other Votes'] || 0;  // Add Other Votes field
+            d.OtherVotes = +d['Other Votes'] || 0;
             d.Population = +d.Population || 0;
-            d.vote_total = d.Republican + d.Democrat + d.OtherVotes;  // Include Other Votes
-            d.percentage_republican = (d.Republican / d.vote_total) * 100 || 0;
-            d.percentage_democrat = (d.Democrat / d.vote_total) * 100 || 0;
-            d.percentage_other = (d.OtherVotes / d.vote_total) * 100 || 0;  // Calculate Other Votes percentage
+
+            // Calculate vote totals and percentages
+            calculateCountyVotes(d);
 
             // Exclude Bedford City from turnout calculation
             if (d.FIPS !== 51515) {

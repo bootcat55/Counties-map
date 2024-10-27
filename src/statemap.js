@@ -1,16 +1,18 @@
 import * as d3 from 'd3';
 import { stateElectoralVotes } from './electoralVotes.js';
 
-let voteMap = new Map();
+// Global vote data map and color toggle for each state
+export let voteMap = new Map();
+export let stateColorToggle = new Map();
 let voteData = [];
 
 // Function to create the US states map
-function createStateMap() {
+export function createStateMap() {
     // Load the vote data from usacounty_votes.csv
     d3.csv('data/usacounty_votes.csv').then(voteDataLoaded => {
         voteData = voteDataLoaded.map(d => ({
             ...d,
-            FIPS: +d.FIPS // Ensure FIPS is treated as a number
+            FIPS: +d.FIPS
         }));
 
         // Aggregate votes by state
@@ -20,7 +22,7 @@ function createStateMap() {
                 totalRepublican: d3.sum(v, d => +d.Republican),
                 totalDemocrat: d3.sum(v, d => +d.Democrat)
             }),
-            d => d.State  // Group by state abbreviation
+            d => d.State
         );
 
         // Populate the global voteMap with state-level totals
@@ -28,17 +30,15 @@ function createStateMap() {
 
         // Set up the SVG container for the states map
         const svgContainer = d3.select("#state-map")
-            .append("div")  // Create a div to hold the SVG
+            .append("div")
             .attr("class", "svg-container");
 
-        // Load the external SVG file for US states
         d3.xml('data/us-states6.svg').then(data => {
             const importedNode = document.importNode(data.documentElement, true);
             svgContainer.node().appendChild(importedNode);
 
             const svg = d3.select(svgContainer.node()).select("svg");
 
-            // Add electoral votes text on each state
             svg.selectAll("path").each(function() {
                 const stateId = this.getAttribute("id");
                 const electoralVotes = stateElectoralVotes[stateId];
@@ -49,10 +49,9 @@ function createStateMap() {
                         .attr("x", bbox.x + bbox.width / 2)
                         .attr("y", bbox.y + bbox.height / 2)
                         .attr("text-anchor", "middle")
-                        .attr("fill", "white") // White color for visibility
+                        .attr("fill", "white")
                         .attr("font-size", "14px")
-                        .attr("stroke", "none") // Ensure no border around the text
-                        .attr("font-weight", "bold") // Bold font
+                        .attr("font-weight", "bold")
                         .text(electoralVotes);
                 }
             });
@@ -63,12 +62,30 @@ function createStateMap() {
                 .style("fill", function () {
                     const stateId = this.getAttribute("id");
                     const votes = voteMap.get(stateId);
-
-                    // Color red for Republican majority, blue for Democrat majority
                     return votes && votes.totalRepublican > votes.totalDemocrat ? "red" : "blue";
                 })
                 .attr("stroke", "#333")
                 .attr("stroke-width", 1.5)
+                .on("click", function() {
+                    const stateId = this.getAttribute("id");
+                    const currentColor = stateColorToggle.get(stateId) || "blue";
+                    let newColor;
+
+                    if (currentColor === "blue") {
+                        newColor = "red";
+                    } else if (currentColor === "red") {
+                        newColor = "gray";
+                    } else {
+                        newColor = "blue";
+                    }
+
+                    d3.select(this).style("fill", newColor);
+                    stateColorToggle.set(stateId, newColor);
+
+                    // Dispatch color toggle event
+                    const toggleEvent = new CustomEvent('stateColorToggled', { detail: { voteMap, stateColorToggle } });
+                    window.dispatchEvent(toggleEvent);
+                })
                 .on("mouseover", function (event) {
                     const tooltip = d3.select("#state-tooltip")
                         .attr("class", "tooltip")
@@ -76,8 +93,6 @@ function createStateMap() {
 
                     const stateId = this.getAttribute("id");
                     const votes = voteMap.get(stateId);
-
-                    // Calculate percentages
                     const totalVotes = votes.totalRepublican + votes.totalDemocrat;
                     const percentageRepublican = (votes.totalRepublican / totalVotes) * 100;
                     const percentageDemocrat = (votes.totalDemocrat / totalVotes) * 100;
@@ -92,28 +107,27 @@ function createStateMap() {
                     .style("left", (event.pageX + 10) + "px")
                     .style("top", (event.pageY - 20) + "px");
 
-                    d3.select(this).style("fill", "lightblue");  // Highlight on hover
-                })
-                .on("mousemove", function (event) {
-                    d3.select("#state-tooltip")
-                        .style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY - 20) + "px");
+                    d3.select(this).style("fill", "lightblue");
                 })
                 .on("mouseout", function () {
                     d3.select("#state-tooltip").style("display", "none");
 
                     const stateId = this.getAttribute("id");
-                    const votes = voteMap.get(stateId);
+                    const overrideColor = stateColorToggle.get(stateId);
 
-                    // Reset color based on vote data after hover
-                    d3.select(this).style("fill", votes.totalRepublican > votes.totalDemocrat ? "red" : "blue");
+                    if (overrideColor) {
+                        d3.select(this).style("fill", overrideColor);
+                    } else {
+                        const votes = voteMap.get(stateId);
+                        d3.select(this).style("fill", votes.totalRepublican > votes.totalDemocrat ? "red" : "blue");
+                    }
                 });
         });
     });
 }
 
 // Function to update the state color based on updated vote totals
-function updateStateColor(stateAbbreviation, voteMap) {
+export function updateStateColor(stateAbbreviation, voteMap) {
     const svgContainer = d3.select("#state-map").select(".svg-container");
     svgContainer.selectAll("path")
         .filter(function () { return this.getAttribute("id") === stateAbbreviation; })
@@ -122,7 +136,6 @@ function updateStateColor(stateAbbreviation, voteMap) {
             return votes && votes.totalRepublican > votes.totalDemocrat ? "red" : "blue";
         });
 
-    // Emit event to update the stacked bar chart
     const event = new CustomEvent('stateVoteUpdated', { detail: { voteMap } });
     window.dispatchEvent(event);
 }
@@ -131,14 +144,12 @@ function updateStateColor(stateAbbreviation, voteMap) {
 window.addEventListener('countyVoteUpdated', function(e) {
     const { state, republicanVotes, democratVotes, fips } = e.detail;
 
-    // Find and update the county in voteData
     const countyToUpdate = voteData.find(county => county.FIPS === fips);
     if (countyToUpdate) {
         countyToUpdate.Republican = republicanVotes; 
         countyToUpdate.Democrat = democratVotes;    
     }
 
-    // Recalculate the total state votes based on the updated voteData
     let stateTotalRepublican = 0;
     let stateTotalDemocrat = 0;
 
@@ -149,15 +160,13 @@ window.addEventListener('countyVoteUpdated', function(e) {
         }
     });
 
-    // Update the voteMap with the new state totals
     voteMap.set(state, {
         totalRepublican: stateTotalRepublican,
         totalDemocrat: stateTotalDemocrat
     });
 
-    // Update the state's color based on the new totals
     updateStateColor(state, voteMap);
 });
 
-// Call the function to create the state map
+// Initialize the state map
 createStateMap();

@@ -13,7 +13,7 @@ export function createInfoPane() {
         .style("display", "none");
 }
 
-export function updateInfoPane(infoPane, county, stateTotalPopulation, winner, electoralVotes, countyType) {
+export function updateInfoPane(infoPane, county, stateTotalPopulation, countyType) {
     // Ensure vote counts have default values if undefined
     const republicanVotes = county.Republican || 0;
     const democratVotes = county.Democrat || 0;
@@ -27,9 +27,9 @@ export function updateInfoPane(infoPane, county, stateTotalPopulation, winner, e
         County: ${county.County}, ${county.State}<br>
         Population: ${county.Population.toLocaleString()}<br>
         State Total Population: ${stateTotalPopulation.toLocaleString()}<br>
-        <strong>Winner: ${winner}</strong><br>
+        
         Vote Turnout: ${county.turnout.toFixed(2)}%<br>
-        Electoral Votes: ${electoralVotes}<br>
+        
         Type: ${countyType}<br>
         <strong>Votes:</strong><br>
         - <span style="color: red;">Republican:</span> ${republicanVotes.toLocaleString()} (${percentageRepublican.toFixed(1)}%)<br>
