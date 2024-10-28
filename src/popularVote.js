@@ -2,25 +2,16 @@ import * as d3 from 'd3';
 
 // Calculate total Democrat, Republican, and Other votes across all states
 export function calculatePopularVote(data) {
-    const stateVotes = d3.rollups(
-        data,
-        v => ({
-            totalRepublican: d3.sum(v, d => +d.Republican),
-            totalDemocrat: d3.sum(v, d => +d.Democrat),
-            totalOther: d3.sum(v, d => +d.OtherVotes)
-        }),
-        d => d.State // Group by state
-    );
+    // Recompute totals with current data
+    let totalRepublicanVotes = d3.sum(data, d => d.Republican);
+    let totalDemocratVotes = d3.sum(data, d => d.Democrat);
+    let totalOtherVotes = d3.sum(data, d => d.OtherVotes);
 
-    let totalRepublicanVotes = 0;
-    let totalDemocratVotes = 0;
-    let totalOtherVotes = 0;
-
-    stateVotes.forEach(([, votes]) => {
-        totalRepublicanVotes += votes.totalRepublican;
-        totalDemocratVotes += votes.totalDemocrat;
-        totalOtherVotes += votes.totalOther;
-    });
+    // Log the computed totals to debug
+    console.log("Calculated Popular Vote Totals:");
+    console.log("Total Republican Votes:", totalRepublicanVotes);
+    console.log("Total Democrat Votes:", totalDemocratVotes);
+    console.log("Total Other Votes:", totalOtherVotes);
 
     return { totalRepublicanVotes, totalDemocratVotes, totalOtherVotes };
 }
@@ -73,6 +64,13 @@ export function displayPopularVote(popularVoteResults) {
         `);
 }
 
+// Recalculate and display popular vote totals
+export function recalculateAndDisplayPopularVote(data) {
+    console.log("Recalculating and displaying popular vote with data:", data);
+    const popularVoteResults = calculatePopularVote(data);
+    displayPopularVote(popularVoteResults);
+}
+
 // Load vote data and initially calculate popular vote by state
 d3.csv('data/usacounty_votes.csv').then(data => {
     data.forEach(d => {
@@ -81,7 +79,5 @@ d3.csv('data/usacounty_votes.csv').then(data => {
         d.OtherVotes = +d['Other Votes'];
     });
 
-    const popularVoteResults = calculatePopularVote(data);
-    displayPopularVote(popularVoteResults);
+    recalculateAndDisplayPopularVote(data);
 });
-

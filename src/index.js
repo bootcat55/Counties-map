@@ -5,6 +5,7 @@ import { drawStackedBarChart } from './stackedBarChart.js';
 import { calculateElectoralVotes } from './voteLogic.js';
 import { updateVoteTotals, resetCountyVotes, calculateCountyVotes } from './voteLogic.js';
 import { initializeMapInteractions } from './mapInteractions.js';
+import { recalculateAndDisplayPopularVote } from './popularVote.js';
 import './statemap.js';
 
 function readCsvFile(url, callback) {
@@ -15,7 +16,7 @@ function readCsvFile(url, callback) {
             d.State = d.State ? d.State.trim() : 'Unknown';
             d.Republican = +d.Republican || 0;
             d.Democrat = +d.Democrat || 0;
-            d.OtherVotes = +d['Other Votes'] || 0;
+            d.OtherVotes = +d['Other Votes'] || 0;  // Map 'Other Votes' column to OtherVotes
             d.Population = +d.Population || 0;
 
             // Calculate vote totals and percentages
@@ -45,6 +46,10 @@ readCsvFile('data/usacounty_votes.csv', data => {
     const electoralResults = calculateElectoralVotes(data);
     drawStackedBarChart(electoralResults);
     initializeMapInteractions(data);  // Initialize map interactions with the data
+
+    // Initial popular vote calculation and display
+    recalculateAndDisplayPopularVote(data);
 });
 
 export { readCsvFile };
+

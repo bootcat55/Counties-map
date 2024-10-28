@@ -1,19 +1,44 @@
 import * as d3 from 'd3';
-import { calculateCountyVotes } from './voteLogic.js'; // Centralized calculation function
-import { voteMap, stateColorToggle } from './statemap.js'; 
+import { calculateCountyVotes } from './voteLogic.js';
+import { voteMap, updateStateColor } from './statemap.js';
 import { calculatePopularVote, displayPopularVote } from './popularVote.js';
 
 // Function to update a county’s votes and map color
 export function updateVoteTotals(county, newRepublicanVotes, newDemocratVotes, newOtherVotes) {
-    // Update the county's vote properties
-    county.Republican = newRepublicanVotes || 0;
-    county.Democrat = newDemocratVotes || 0;
-    county.OtherVotes = newOtherVotes || 0;
+    // Ensure numeric values for updated votes
+    county.Republican = +newRepublicanVotes || 0;
+    county.Democrat = +newDemocratVotes || 0;
+    county.OtherVotes = +newOtherVotes || 0;
 
-    // Recalculate totals and percentages
+    // Recalculate totals and percentages for the county
     calculateCountyVotes(county);
 
-    // Emit event to notify the state map
+    // Update state-level vote totals in voteMap to reflect the county vote changes
+    let updatedStateVotes = voteMap.get(county.State) || { totalRepublican: 0, totalDemocrat: 0, totalOther: 0 };
+
+    // Adjust for previous county votes to prevent double-counting
+    if (county.originalVotes) {
+        updatedStateVotes.totalRepublican -= county.originalVotes.Republican || 0;
+        updatedStateVotes.totalDemocrat -= county.originalVotes.Democrat || 0;
+        updatedStateVotes.totalOther -= county.originalVotes.OtherVotes || 0;
+    }
+
+    // Add new county votes to the state total
+    updatedStateVotes.totalRepublican += county.Republican;
+    updatedStateVotes.totalDemocrat += county.Democrat;
+    updatedStateVotes.totalOther += county.OtherVotes;
+
+    // Save the updated votes as the county's new "original" vote totals
+    county.originalVotes = {
+        Republican: county.Republican,
+        Democrat: county.Democrat,
+        OtherVotes: county.OtherVotes
+    };
+
+    // Update the voteMap with the new state totals
+    voteMap.set(county.State, updatedStateVotes);
+
+    // Emit an event to notify the state map of the county vote update
     const event = new CustomEvent('countyVoteUpdated', {
         detail: {
             state: county.State,
@@ -25,15 +50,11 @@ export function updateVoteTotals(county, newRepublicanVotes, newDemocratVotes, n
     });
     window.dispatchEvent(event);
 
-    // Remove any manual override if state majority is clear
-    const stateVotes = voteMap.get(county.State);
-    if (stateVotes && stateVotes.totalRepublican !== stateVotes.totalDemocrat) {
-        stateColorToggle.delete(county.State);
-    }
-
-    // Recalculate and display popular votes
-    recalculateAndDisplayPopularVote();
+    // Trigger the state color change event for the stacked bar chart to reflect changes
     window.dispatchEvent(new Event('stateColorChangedByVotes'));
+
+    // Recalculate and display the popular vote with the latest data
+    recalculateAndDisplayPopularVote(Array.from(voteMap.values()));
 }
 
 // Update the color of a county based on the latest percentages
@@ -54,19 +75,13 @@ export function resetCountyVotes(county) {
     county.OtherVotes = county.originalVotes.OtherVotes;
 
     calculateCountyVotes(county);
-    recalculateAndDisplayPopularVote();
+    recalculateAndDisplayPopularVote(Array.from(voteMap.values()));
 }
 
 // Recalculate and display popular vote totals
-function recalculateAndDisplayPopularVote() {
-    d3.csv('data/usacounty_votes.csv').then(data => {
-        data.forEach(d => {
-            d.Republican = +d.Republican;
-            d.Democrat = +d.Democrat;
-            d.OtherVotes = +d['Other Votes'];
-        });
-
-        const popularVoteResults = calculatePopularVote(data);
-        displayPopularVote(popularVoteResults);
-    });
+function recalculateAndDisplayPopularVote(data) {
+    console.log("Recalculating and displaying popular vote with data:", data);
+    const popularVoteResults = calculatePopularVote(data);
+    displayPopularVote(popularVoteResults);
 }
+

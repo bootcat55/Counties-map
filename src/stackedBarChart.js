@@ -83,7 +83,7 @@ export function drawStackedBarChart(results) {
         .text("270 votes");
 }
 
-// Helper function to calculate electoral results based on the current state color
+// Improved electoral votes calculation based on vote data and override checks
 function calculateElectoralVotesFromMap(voteMap, stateColorToggle) {
     let republicanVotes = 0;
     let democratVotes = 0;
@@ -100,10 +100,14 @@ function calculateElectoralVotesFromMap(voteMap, stateColorToggle) {
         } else if (overrideColor === "gray") {
             tooCloseToCallVotes += stateElectoralVotes[state];
         } else {
-            // No override, use actual vote comparison
-            if (votes.totalRepublican > votes.totalDemocrat) {
+            // No override, use actual vote comparison based on percentages
+            const totalVotes = votes.totalRepublican + votes.totalDemocrat + votes.totalOther;
+            const percentageRepublican = (votes.totalRepublican / totalVotes) * 100;
+            const percentageDemocrat = (votes.totalDemocrat / totalVotes) * 100;
+
+            if (percentageRepublican > percentageDemocrat) {
                 republicanVotes += stateElectoralVotes[state];
-            } else if (votes.totalDemocrat > votes.totalRepublican) {
+            } else if (percentageDemocrat > percentageRepublican) {
                 democratVotes += stateElectoralVotes[state];
             } else {
                 tooCloseToCallVotes += stateElectoralVotes[state];
@@ -114,19 +118,13 @@ function calculateElectoralVotesFromMap(voteMap, stateColorToggle) {
     return { republicanVotes, democratVotes, tooCloseToCallVotes };
 }
 
-// Listen for both vote-based and override-based state color changes
-window.addEventListener('countyVoteUpdated', function() {
+// Update the chart based on county vote updates or state color toggles
+function updateChart() {
     const electoralResults = calculateElectoralVotesFromMap(voteMap, stateColorToggle);
     drawStackedBarChart(electoralResults);
-});
+}
 
-window.addEventListener('stateColorToggled', function() {
-    const electoralResults = calculateElectoralVotesFromMap(voteMap, stateColorToggle);
-    drawStackedBarChart(electoralResults);
-});
-
-// New listener to update the chart whenever state colors change due to county vote updates
-window.addEventListener('stateColorChangedByVotes', function() {
-    const electoralResults = calculateElectoralVotesFromMap(voteMap, stateColorToggle);
-    drawStackedBarChart(electoralResults);
-});
+// Event listeners to handle all necessary updates for stacked bar chart
+window.addEventListener('countyVoteUpdated', updateChart);
+window.addEventListener('stateColorToggled', updateChart);
+window.addEventListener('stateColorChangedByVotes', updateChart);

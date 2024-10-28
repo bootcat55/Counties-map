@@ -123,6 +123,7 @@ export function initializeMapInteractions(data) {
     });
 }
 
+// Load vote data and calculate initial popular vote by party
 d3.csv('data/usacounty_votes.csv').then(data => {
     data.forEach(d => {
         d.Republican = +d.Republican;

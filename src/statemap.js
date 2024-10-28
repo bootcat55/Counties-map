@@ -13,20 +13,22 @@ export function createStateMap() {
     d3.csv('data/usacounty_votes.csv').then(voteDataLoaded => {
         voteData = voteDataLoaded.map(d => ({
             ...d,
-            FIPS: +d.FIPS
+            FIPS: +d.FIPS,
+            OtherVotes: +d['Other Votes'] || 0 // Map 'Other Votes' to OtherVotes
         }));
 
-        // Aggregate votes by state
+        // Aggregate votes by state, including Other votes
         const stateVotes = d3.rollups(
             voteData,
             v => ({
                 totalRepublican: d3.sum(v, d => +d.Republican),
-                totalDemocrat: d3.sum(v, d => +d.Democrat)
+                totalDemocrat: d3.sum(v, d => +d.Democrat),
+                totalOther: d3.sum(v, d => +d.OtherVotes)  // Include totalOther calculation
             }),
             d => d.State
         );
 
-        // Populate the global voteMap with state-level totals
+        // Populate the global voteMap with state-level totals, including Other votes
         voteMap = new Map(stateVotes);
 
         // Set up the SVG container for the states map
@@ -86,7 +88,7 @@ export function createStateMap() {
                     stateColorToggle.set(stateId, newColor);
                     stateLastUpdated.set(stateId, 'override'); // Mark last update as override
 
-                    // Dispatch color toggle event
+                    // Dispatch color toggle event to update chart
                     const toggleEvent = new CustomEvent('stateColorToggled', { detail: { voteMap, stateColorToggle } });
                     window.dispatchEvent(toggleEvent);
                 })
@@ -97,16 +99,19 @@ export function createStateMap() {
 
                     const stateId = this.getAttribute("id");
                     const votes = voteMap.get(stateId);
-                    const totalVotes = votes.totalRepublican + votes.totalDemocrat;
+                    const totalVotes = votes.totalRepublican + votes.totalDemocrat + votes.totalOther;
                     const percentageRepublican = (votes.totalRepublican / totalVotes) * 100;
                     const percentageDemocrat = (votes.totalDemocrat / totalVotes) * 100;
+                    const percentageOther = (votes.totalOther / totalVotes) * 100;
 
                     tooltip.html(`
                         <strong>State: ${stateId}</strong><br>
                         <strong><span style="color: red;">Republican:</span></strong> ${percentageRepublican.toFixed(1)}%<br>
                         <strong><span style="color: blue;">Democrat:</span></strong> ${percentageDemocrat.toFixed(1)}%<br>
+                        <strong><span style="color: gray;">Other:</span></strong> ${percentageOther.toFixed(1)}%<br>
                         Republican: ${votes ? votes.totalRepublican : 'N/A'}<br>
-                        Democrat: ${votes ? votes.totalDemocrat : 'N/A'}
+                        Democrat: ${votes ? votes.totalDemocrat : 'N/A'}<br>
+                        Other: ${votes ? votes.totalOther : 'N/A'}
                     `)
                     .style("left", (event.pageX + 10) + "px")
                     .style("top", (event.pageY - 20) + "px");
@@ -140,38 +145,50 @@ export function updateStateColor(stateAbbreviation, voteMap) {
         .filter(function () { return this.getAttribute("id") === stateAbbreviation; })
         .style("fill", function () {
             const votes = voteMap.get(stateAbbreviation);
-            return votes && votes.totalRepublican > votes.totalDemocrat ? "red" : "blue";
+            const newColor = votes && votes.totalRepublican > votes.totalDemocrat ? "red" : "blue";
+
+            // Reset any color override if the majority changes
+            if (stateColorToggle.has(stateAbbreviation) && stateColorToggle.get(stateAbbreviation) !== newColor) {
+                stateColorToggle.delete(stateAbbreviation);
+            }
+
+            return newColor;
         });
 
     stateLastUpdated.set(stateAbbreviation, 'voteUpdate'); // Mark last update as vote update
 
-    const event = new CustomEvent('stateVoteUpdated', { detail: { voteMap } });
-    window.dispatchEvent(event);
+    // Dispatch an event to update the stacked bar chart with the new state majority
+    window.dispatchEvent(new Event('stateColorChangedByVotes'));
 }
 
 // Listen for county vote updates and recalculate state totals
 window.addEventListener('countyVoteUpdated', function(e) {
-    const { state, republicanVotes, democratVotes, fips } = e.detail;
+    const { state, republicanVotes, democratVotes, otherVotes, fips } = e.detail;
 
     const countyToUpdate = voteData.find(county => county.FIPS === fips);
     if (countyToUpdate) {
         countyToUpdate.Republican = republicanVotes; 
-        countyToUpdate.Democrat = democratVotes;    
+        countyToUpdate.Democrat = democratVotes; 
+        countyToUpdate.OtherVotes = otherVotes;
     }
 
+    // Calculate updated state totals, including Other votes
     let stateTotalRepublican = 0;
     let stateTotalDemocrat = 0;
+    let stateTotalOther = 0;
 
     voteData.forEach(county => {
         if (county.State === state) {
             stateTotalRepublican += +county.Republican;  
             stateTotalDemocrat += +county.Democrat;
+            stateTotalOther += +county.OtherVotes;
         }
     });
 
     voteMap.set(state, {
         totalRepublican: stateTotalRepublican,
-        totalDemocrat: stateTotalDemocrat
+        totalDemocrat: stateTotalDemocrat,
+        totalOther: stateTotalOther
     });
 
     updateStateColor(state, voteMap);
@@ -179,4 +196,5 @@ window.addEventListener('countyVoteUpdated', function(e) {
 
 // Initialize the state map
 createStateMap();
+
 
