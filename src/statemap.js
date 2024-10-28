@@ -1,37 +1,34 @@
 import * as d3 from 'd3';
 import { stateElectoralVotes } from './electoralVotes.js';
+import { voteMap, stateColorToggle, stateLastUpdated } from './stateData.js';
+import { recalculateAndDisplayPopularVote } from './popularVote.js';
 
-// Global vote data map, color toggle, and tracking of last updates
-export let voteMap = new Map();
-export let stateColorToggle = new Map();
-export let stateLastUpdated = new Map(); // Track last update type
 let voteData = [];
 
 // Function to create the US states map
 export function createStateMap() {
-    // Load the vote data from usacounty_votes.csv
     d3.csv('data/usacounty_votes.csv').then(voteDataLoaded => {
         voteData = voteDataLoaded.map(d => ({
             ...d,
             FIPS: +d.FIPS,
-            OtherVotes: +d['Other Votes'] || 0 // Map 'Other Votes' to OtherVotes
+            OtherVotes: +d['Other Votes'] || 0
         }));
 
-        // Aggregate votes by state, including Other votes
         const stateVotes = d3.rollups(
             voteData,
             v => ({
                 totalRepublican: d3.sum(v, d => +d.Republican),
                 totalDemocrat: d3.sum(v, d => +d.Democrat),
-                totalOther: d3.sum(v, d => +d.OtherVotes)  // Include totalOther calculation
+                totalOther: d3.sum(v, d => +d.OtherVotes)
             }),
             d => d.State
         );
 
-        // Populate the global voteMap with state-level totals, including Other votes
-        voteMap = new Map(stateVotes);
+        voteMap.clear();
+        for (const [state, totals] of stateVotes) {
+            voteMap.set(state, totals);
+        }
 
-        // Set up the SVG container for the states map
         const svgContainer = d3.select("#state-map")
             .append("div")
             .attr("class", "svg-container");
@@ -61,7 +58,6 @@ export function createStateMap() {
                 }
             });
 
-            // Add interaction and styling for all states
             d3.select(svgContainer.node())
                 .selectAll("path")
                 .style("fill", function () {
@@ -86,9 +82,8 @@ export function createStateMap() {
 
                     d3.select(this).style("fill", newColor);
                     stateColorToggle.set(stateId, newColor);
-                    stateLastUpdated.set(stateId, 'override'); // Mark last update as override
+                    stateLastUpdated.set(stateId, 'override');
 
-                    // Dispatch color toggle event to update chart
                     const toggleEvent = new CustomEvent('stateColorToggled', { detail: { voteMap, stateColorToggle } });
                     window.dispatchEvent(toggleEvent);
                 })
@@ -116,19 +111,16 @@ export function createStateMap() {
                     .style("left", (event.pageX + 10) + "px")
                     .style("top", (event.pageY - 20) + "px");
 
-                    d3.select(this).style("fill", "lightblue");  // Temporary color on mouseover
+                    d3.select(this).style("fill", "lightblue");
                 })
                 .on("mouseout", function () {
                     d3.select("#state-tooltip").style("display", "none");
 
                     const stateId = this.getAttribute("id");
 
-                    // Determine which color to apply based on the last update
                     if (stateLastUpdated.get(stateId) === 'override' && stateColorToggle.has(stateId)) {
-                        // Apply override color if it was the last update
                         d3.select(this).style("fill", stateColorToggle.get(stateId));
                     } else {
-                        // Otherwise, apply the color based on vote data
                         const votes = voteMap.get(stateId);
                         const defaultColor = votes.totalRepublican > votes.totalDemocrat ? "red" : "blue";
                         d3.select(this).style("fill", defaultColor);
@@ -139,7 +131,7 @@ export function createStateMap() {
 }
 
 // Function to update the state color based on updated vote totals
-export function updateStateColor(stateAbbreviation, voteMap) {
+export function updateStateColor(stateAbbreviation) {
     const svgContainer = d3.select("#state-map").select(".svg-container");
     svgContainer.selectAll("path")
         .filter(function () { return this.getAttribute("id") === stateAbbreviation; })
@@ -147,7 +139,6 @@ export function updateStateColor(stateAbbreviation, voteMap) {
             const votes = voteMap.get(stateAbbreviation);
             const newColor = votes && votes.totalRepublican > votes.totalDemocrat ? "red" : "blue";
 
-            // Reset any color override if the majority changes
             if (stateColorToggle.has(stateAbbreviation) && stateColorToggle.get(stateAbbreviation) !== newColor) {
                 stateColorToggle.delete(stateAbbreviation);
             }
@@ -155,9 +146,7 @@ export function updateStateColor(stateAbbreviation, voteMap) {
             return newColor;
         });
 
-    stateLastUpdated.set(stateAbbreviation, 'voteUpdate'); // Mark last update as vote update
-
-    // Dispatch an event to update the stacked bar chart with the new state majority
+    stateLastUpdated.set(stateAbbreviation, 'voteUpdate');
     window.dispatchEvent(new Event('stateColorChangedByVotes'));
 }
 
@@ -172,7 +161,6 @@ window.addEventListener('countyVoteUpdated', function(e) {
         countyToUpdate.OtherVotes = otherVotes;
     }
 
-    // Calculate updated state totals, including Other votes
     let stateTotalRepublican = 0;
     let stateTotalDemocrat = 0;
     let stateTotalOther = 0;
@@ -191,10 +179,9 @@ window.addEventListener('countyVoteUpdated', function(e) {
         totalOther: stateTotalOther
     });
 
-    updateStateColor(state, voteMap);
+    updateStateColor(state);
 });
 
 // Initialize the state map
 createStateMap();
-
 

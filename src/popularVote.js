@@ -1,14 +1,12 @@
 import * as d3 from 'd3';
 
-// Calculate total Democrat, Republican, and Other votes across all states
-export function calculatePopularVote(data) {
-    // Recompute totals with current data
-    let totalRepublicanVotes = d3.sum(data, d => d.Republican);
-    let totalDemocratVotes = d3.sum(data, d => d.Democrat);
-    let totalOtherVotes = d3.sum(data, d => d.OtherVotes);
+// Calculate total Democrat, Republican, and Other votes across all counties
+export function calculatePopularVote(countyData) {
+    const totalRepublicanVotes = d3.sum(countyData, d => d.Republican);
+    const totalDemocratVotes = d3.sum(countyData, d => d.Democrat);
+    const totalOtherVotes = d3.sum(countyData, d => d.OtherVotes);
 
-    // Log the computed totals to debug
-    console.log("Calculated Popular Vote Totals:");
+    console.log("Calculated Popular Vote Totals for All Counties:");
     console.log("Total Republican Votes:", totalRepublicanVotes);
     console.log("Total Democrat Votes:", totalDemocratVotes);
     console.log("Total Other Votes:", totalOtherVotes);
@@ -16,24 +14,20 @@ export function calculatePopularVote(data) {
     return { totalRepublicanVotes, totalDemocratVotes, totalOtherVotes };
 }
 
-// Display popular vote totals with percentages in the UI
+// Display popular vote totals with percentages in the UI for all counties
 export function displayPopularVote(popularVoteResults) {
-    // Calculate total votes and percentages
     const totalVotes = popularVoteResults.totalRepublicanVotes + popularVoteResults.totalDemocratVotes + popularVoteResults.totalOtherVotes;
     const democratPercentage = ((popularVoteResults.totalDemocratVotes / totalVotes) * 100).toFixed(1);
     const republicanPercentage = ((popularVoteResults.totalRepublicanVotes / totalVotes) * 100).toFixed(1);
     const otherPercentage = ((popularVoteResults.totalOtherVotes / totalVotes) * 100).toFixed(1);
 
-    // Clear any existing content in the popular vote container
     const container = d3.select("#popular-vote-container").html("");
 
-    // Set up a flex container for horizontal alignment
     container
         .style("display", "flex")
         .style("justify-content", "left")
         .style("margin-top", "-50px");
 
-    // Add Democrat total with percentage
     container.append("div")
         .attr("class", "popular-vote-democrat")
         .style("margin-right", "20px")
@@ -43,7 +37,6 @@ export function displayPopularVote(popularVoteResults) {
             <br><strong>(${democratPercentage}% of total)</strong>
         `);
 
-    // Add Republican total with percentage
     container.append("div")
         .attr("class", "popular-vote-republican")
         .style("margin-left", "100px")
@@ -53,7 +46,6 @@ export function displayPopularVote(popularVoteResults) {
             <br><strong>(${republicanPercentage}% of total)</strong>
         `);
 
-    // Add Other Votes total with percentage
     container.append("div")
         .attr("class", "popular-vote-other")
         .style("margin-left", "100px")
@@ -64,20 +56,9 @@ export function displayPopularVote(popularVoteResults) {
         `);
 }
 
-// Recalculate and display popular vote totals
-export function recalculateAndDisplayPopularVote(data) {
-    console.log("Recalculating and displaying popular vote with data:", data);
-    const popularVoteResults = calculatePopularVote(data);
+// Recalculate and display popular vote totals for each county in the dataset
+export function recalculateAndDisplayPopularVote(countyData) {
+    console.log("Recalculating and displaying popular vote for each county:", countyData);
+    const popularVoteResults = calculatePopularVote(countyData);
     displayPopularVote(popularVoteResults);
 }
-
-// Load vote data and initially calculate popular vote by state
-d3.csv('data/usacounty_votes.csv').then(data => {
-    data.forEach(d => {
-        d.Republican = +d.Republican;
-        d.Democrat = +d.Democrat;
-        d.OtherVotes = +d['Other Votes'];
-    });
-
-    recalculateAndDisplayPopularVote(data);
-});

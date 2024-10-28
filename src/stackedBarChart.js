@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import { stateElectoralVotes } from './electoralVotes.js';
-import { voteMap, stateColorToggle } from './statemap.js';
+import { voteMap, stateColorToggle } from './stateData.js';
 
 // Function to draw the stacked bar chart with a 270 electoral vote marker
 export function drawStackedBarChart(results) {

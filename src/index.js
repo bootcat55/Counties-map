@@ -1,10 +1,9 @@
 import './styles.css';
 import * as d3 from 'd3';
-import { json } from 'd3-fetch';
 import { drawStackedBarChart } from './stackedBarChart.js';
-import { calculateElectoralVotes } from './voteLogic.js';
-import { updateVoteTotals, resetCountyVotes, calculateCountyVotes } from './voteLogic.js';
+import { calculateElectoralVotes, calculateCountyVotes } from './voteLogic.js';  // Ensure calculateCountyVotes is imported
 import { initializeMapInteractions } from './mapInteractions.js';
+import { initializeCountyDataArray } from './voteUpdates.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
 import './statemap.js';
 
@@ -16,10 +15,9 @@ function readCsvFile(url, callback) {
             d.State = d.State ? d.State.trim() : 'Unknown';
             d.Republican = +d.Republican || 0;
             d.Democrat = +d.Democrat || 0;
-            d.OtherVotes = +d['Other Votes'] || 0;  // Map 'Other Votes' column to OtherVotes
+            d.OtherVotes = +d['Other Votes'] || 0;
             d.Population = +d.Population || 0;
 
-            // Calculate vote totals and percentages
             calculateCountyVotes(d);
 
             // Exclude Bedford City from turnout calculation
@@ -36,6 +34,9 @@ function readCsvFile(url, callback) {
             }
         });
 
+        // Initialize countyDataArray with CSV data for further updates
+        initializeCountyDataArray(data);
+
         callback(data);
     });
 }
@@ -45,11 +46,13 @@ readCsvFile('data/usacounty_votes.csv', data => {
     // Calculate electoral results including other votes in totals
     const electoralResults = calculateElectoralVotes(data);
     drawStackedBarChart(electoralResults);
-    initializeMapInteractions(data);  // Initialize map interactions with the data
+    initializeMapInteractions();  // Initialize map interactions without passing data directly
 
-    // Initial popular vote calculation and display
+    // Initial popular vote calculation and display using all counties in countyDataArray
     recalculateAndDisplayPopularVote(data);
 });
 
 export { readCsvFile };
+
+
 

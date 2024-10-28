@@ -1,15 +1,13 @@
 import './styles.css';
 import * as d3 from 'd3';
 import { json } from 'd3-fetch';
-import { drawStackedBarChart } from './stackedBarChart.js';
-import { stateElectoralVotes, calculateElectoralVotes } from './electoralVotes.js';
-import { updateVoteTotals, updateCountyColor, resetCountyVotes } from './voteUpdates.js';
+import { updateVoteTotals, updateCountyColor, resetCountyVotes, initializeCountyDataArray, countyDataArray } from './voteUpdates.js';  // Import countyDataArray
+import { recalculateAndDisplayPopularVote } from './popularVote.js';
 import { createInfoPane, createUpdatePane, createTooltip, updateInfoPane, updateTooltip, hideTooltip, createResetAllButton } from './paneSetup.js';
 import { createZoomControls } from './zoom.js';
 import './statemap.js';
-import { calculatePopularVote, displayPopularVote } from './popularVote.js';
 
-export function initializeMapInteractions(data) {
+export function initializeMapInteractions() {
     const infoPane = createInfoPane();
     const { updatePane, repInput, demInput, otherInput, submitButton, resetButton } = createUpdatePane();
     const tooltip = createTooltip();
@@ -25,23 +23,16 @@ export function initializeMapInteractions(data) {
     createZoomControls(svg, width, height);
 
     json('data/geojson-counties-fips.json').then(geoData => {
-        const usFipsCodes = data.map(d => d.FIPS);
+        const usFipsCodes = countyDataArray.map(d => d.FIPS);  // Using countyDataArray
         const filteredGeoData = {
             type: "FeatureCollection",
             features: geoData.features.filter(feature => usFipsCodes.includes(+feature.id))
         };
 
         filteredGeoData.features.forEach(feature => {
-            if (+feature.id === 51515) {
-                const bedfordCountyData = data.find(d => d.FIPS === 51019);
-                if (bedfordCountyData) {
-                    feature.properties = { ...bedfordCountyData, FIPS: 51515 };
-                }
-            } else {
-                const county = data.find(d => d.FIPS === +feature.id);
-                if (county) {
-                    feature.properties = { ...county };
-                }
+            const countyData = countyDataArray.find(d => d.FIPS === +feature.id);  // Find in countyDataArray
+            if (countyData) {
+                feature.properties = { ...countyData };
             }
         });
 
@@ -68,7 +59,7 @@ export function initializeMapInteractions(data) {
                 hideTooltip(tooltip);
             })
             .on("click", function(event, d) {
-                const stateTotalPopulation = data
+                const stateTotalPopulation = countyDataArray
                     .filter(county => county.FIPS !== 51515)
                     .reduce((total, county) => total + county.Population, 0);
 
@@ -90,12 +81,15 @@ export function initializeMapInteractions(data) {
                     if (!isNaN(newRepublicanVotes) && !isNaN(newDemocratVotes) && !isNaN(newOtherVotes)) {
                         updateVoteTotals(d.properties, newRepublicanVotes, newDemocratVotes, newOtherVotes);
 
-                        const selectedCountyPath = svg.selectAll("path").filter(f => f.properties.FIPS === d.properties.FIPS || f.properties.FIPS === 51515);
+                        const selectedCountyPath = svg.selectAll("path").filter(f => f.properties.FIPS === d.properties.FIPS);
                         updateCountyColor(selectedCountyPath, d.properties);
 
                         updateInfoPane(infoPane, d.properties, stateTotalPopulation, countyType);
 
                         updatePane.style("display", "none");
+
+                        // Recalculate popular vote with updated county data in countyDataArray
+                        recalculateAndDisplayPopularVote(countyDataArray);
                     }
                 });
 
@@ -103,12 +97,15 @@ export function initializeMapInteractions(data) {
                     e.preventDefault();
                     resetCountyVotes(d.properties);
 
-                    const selectedCountyPath = svg.selectAll("path").filter(f => f.properties.FIPS === d.properties.FIPS || f.properties.FIPS === 51515);
+                    const selectedCountyPath = svg.selectAll("path").filter(f => f.properties.FIPS === d.properties.FIPS);
                     updateCountyColor(selectedCountyPath, d.properties);
 
                     updateInfoPane(infoPane, d.properties, stateTotalPopulation, countyType);
 
                     updatePane.style("display", "none");
+
+                    // Recalculate popular vote with reset county data
+                    recalculateAndDisplayPopularVote(countyDataArray);
                 });
             });
 
@@ -119,11 +116,14 @@ export function initializeMapInteractions(data) {
                 const countyPath = svg.selectAll("path").filter(d => d.properties.FIPS === feature.properties.FIPS);
                 updateCountyColor(countyPath, feature.properties);
             });
+
+            // Recalculate popular vote for all counties
+            recalculateAndDisplayPopularVote(countyDataArray);
         });
     });
 }
 
-// Load vote data and calculate initial popular vote by party
+// Load vote data and initialize it in countyDataArray for accurate tracking of updates
 d3.csv('data/usacounty_votes.csv').then(data => {
     data.forEach(d => {
         d.Republican = +d.Republican;
@@ -131,6 +131,9 @@ d3.csv('data/usacounty_votes.csv').then(data => {
         d.OtherVotes = +d['Other Votes'];
     });
 
-    const popularVoteResults = calculatePopularVote(data);
-    displayPopularVote(popularVoteResults);
+    // Initialize county data array in voteUpdates for direct updates
+    initializeCountyDataArray(data);
+
+    // Display initial popular vote with loaded data
+    recalculateAndDisplayPopularVote(countyDataArray);
 });
