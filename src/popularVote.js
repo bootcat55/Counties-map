@@ -1,9 +1,7 @@
 import * as d3 from 'd3';
 
+// Calculate total Democrat, Republican, and Other votes across all states
 export function calculatePopularVote(data) {
-    console.log("Data loaded for calculating popular vote:", data);
-
-    // Calculate total Democrat, Republican, and Other votes across all states
     const stateVotes = d3.rollups(
         data,
         v => ({
@@ -14,25 +12,21 @@ export function calculatePopularVote(data) {
         d => d.State // Group by state
     );
 
-    // Aggregate the totals across all states
     let totalRepublicanVotes = 0;
     let totalDemocratVotes = 0;
     let totalOtherVotes = 0;
 
-    stateVotes.forEach(([state, votes]) => {
+    stateVotes.forEach(([, votes]) => {
         totalRepublicanVotes += votes.totalRepublican;
         totalDemocratVotes += votes.totalDemocrat;
         totalOtherVotes += votes.totalOther;
     });
 
-    console.log("Calculated popular vote totals:", { totalRepublicanVotes, totalDemocratVotes, totalOtherVotes });
-
     return { totalRepublicanVotes, totalDemocratVotes, totalOtherVotes };
 }
 
+// Display popular vote totals with percentages in the UI
 export function displayPopularVote(popularVoteResults) {
-    console.log("Displaying popular vote results:", popularVoteResults);
-
     // Calculate total votes and percentages
     const totalVotes = popularVoteResults.totalRepublicanVotes + popularVoteResults.totalDemocratVotes + popularVoteResults.totalOtherVotes;
     const democratPercentage = ((popularVoteResults.totalDemocratVotes / totalVotes) * 100).toFixed(1);
@@ -79,7 +73,7 @@ export function displayPopularVote(popularVoteResults) {
         `);
 }
 
-// Load the vote data and calculate popular vote by state
+// Load vote data and initially calculate popular vote by state
 d3.csv('data/usacounty_votes.csv').then(data => {
     data.forEach(d => {
         d.Republican = +d.Republican;
@@ -90,3 +84,4 @@ d3.csv('data/usacounty_votes.csv').then(data => {
     const popularVoteResults = calculatePopularVote(data);
     displayPopularVote(popularVoteResults);
 });
+
