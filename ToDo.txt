@@ -2,17 +2,14 @@
 
 To Do list:
 
--Correct Alaska's votes
--make sure popular votes are updated with user's updated county votes
+-Correct Alaska's votes (may change to house district votes)
 -correct north east's electoral vote placements
 -move Hawaii's and Alaska's electoral votes to the correct position
--try to fix Alaska's vote totals/county totals. May change to house district votes.
--make sure reset buttons also update the state colors automatically.
 -make sliders for vote data
 
 Far future:
 
--include "other votes" data in the database in the future.
+-add Discord
 -Add feed of RCP polls and polling data
 -make twitter live feed posts(paid API needed - 100$)
 -include news ticker(maybe)
