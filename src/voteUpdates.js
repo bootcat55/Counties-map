@@ -2,14 +2,16 @@ import * as d3 from 'd3';
 import { calculateCountyVotes } from './voteLogic.js';
 import { voteMap } from './stateData.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
+import { updateStateColor } from './statemap.js'; // Ensure this function is imported
 
-// Define and export countyDataArray
-export let countyDataArray = [];  // Array to store updated data per county
+// Define county data arrays
+export let countyDataArray = [];  // Array to store current data per county
+let originalCountyDataArray = []; // Array to store a backup of the original CSV data
 
-// Initialize countyDataArray by loading data from the CSV
+// Initialize countyDataArray and backup the original data
 export function initializeCountyDataArray(data) {
-    countyDataArray = data.map(county => ({ ...county }));  // Create a copy of data
-    console.log("countyDataArray initialized:", countyDataArray);
+    originalCountyDataArray = data.map(county => ({ ...county }));  // Backup the original CSV data
+    countyDataArray = data.map(county => ({ ...county }));          // Initialize working data array
 }
 
 // Update vote totals for a county and recalculate popular vote with updated data
@@ -28,21 +30,9 @@ export function updateVoteTotals(county, newRepublicanVotes, newDemocratVotes, n
 
     let updatedStateVotes = voteMap.get(county.State) || { totalRepublican: 0, totalDemocrat: 0, totalOther: 0 };
 
-    if (county.originalVotes) {
-        updatedStateVotes.totalRepublican -= county.originalVotes.Republican || 0;
-        updatedStateVotes.totalDemocrat -= county.originalVotes.Democrat || 0;
-        updatedStateVotes.totalOther -= county.originalVotes.OtherVotes || 0;
-    }
-
     updatedStateVotes.totalRepublican += county.Republican;
     updatedStateVotes.totalDemocrat += county.Democrat;
     updatedStateVotes.totalOther += county.OtherVotes;
-
-    county.originalVotes = {
-        Republican: county.Republican,
-        Democrat: county.Democrat,
-        OtherVotes: county.OtherVotes
-    };
 
     voteMap.set(county.State, updatedStateVotes);
 
@@ -75,17 +65,40 @@ export function updateCountyColor(path, county) {
 
 // Reset a county’s votes to original and update color
 export function resetCountyVotes(county) {
-    county.Republican = county.originalVotes.Republican;
-    county.Democrat = county.originalVotes.Democrat;
-    county.OtherVotes = county.originalVotes.OtherVotes;
+    const originalCounty = originalCountyDataArray.find(c => c.FIPS === county.FIPS);
+    if (originalCounty) {
+        county.Republican = originalCounty.Republican;
+        county.Democrat = originalCounty.Democrat;
+        county.OtherVotes = originalCounty.OtherVotes;
 
-    calculateCountyVotes(county);
+        calculateCountyVotes(county);
 
-    const countyIndex = countyDataArray.findIndex(c => c.FIPS === county.FIPS);
-    if (countyIndex !== -1) {
-        countyDataArray[countyIndex] = { ...county };
+        const countyIndex = countyDataArray.findIndex(c => c.FIPS === county.FIPS);
+        if (countyIndex !== -1) {
+            countyDataArray[countyIndex] = { ...originalCounty };  // Restore original data
+        }
+
+        // Recalculate the total votes for the state
+        const stateCounties = countyDataArray.filter(c => c.State === county.State);
+        const totalRepublican = stateCounties.reduce((sum, c) => sum + c.Republican, 0);
+        const totalDemocrat = stateCounties.reduce((sum, c) => sum + c.Democrat, 0);
+        const totalOther = stateCounties.reduce((sum, c) => sum + c.OtherVotes, 0);
+
+        // Update the state's totals in voteMap
+        voteMap.set(county.State, {
+            totalRepublican,
+            totalDemocrat,
+            totalOther
+        });
+
+        // Update the state color immediately
+        updateStateColor(county.State);
+
+        // Dispatch event to recalculate the stacked bar chart
+        window.dispatchEvent(new Event('stateColorChangedByVotes'));
+
+        recalculateAndDisplayPopularVote(countyDataArray);
     }
-
-    // Recalculate popular vote with reset countyDataArray
-    recalculateAndDisplayPopularVote(countyDataArray);
 }
+
+

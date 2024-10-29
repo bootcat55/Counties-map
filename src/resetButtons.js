@@ -1,5 +1,4 @@
-/*
-import * as d3 from 'd3';
+/*import * as d3 from 'd3';
 import { resetCountyVotes, updateCountyColor } from './voteUpdates.js';
 import { updateInfoPane } from './paneSetup.js';
 
@@ -58,6 +57,4 @@ export function createResetAllButton(svg, filteredGeoData) {
         });
 
     return resetAllButton;
-}
-
-*/
+}*/

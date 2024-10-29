@@ -6,11 +6,6 @@ export function calculatePopularVote(countyData) {
     const totalDemocratVotes = d3.sum(countyData, d => d.Democrat);
     const totalOtherVotes = d3.sum(countyData, d => d.OtherVotes);
 
-    console.log("Calculated Popular Vote Totals for All Counties:");
-    console.log("Total Republican Votes:", totalRepublicanVotes);
-    console.log("Total Democrat Votes:", totalDemocratVotes);
-    console.log("Total Other Votes:", totalOtherVotes);
-
     return { totalRepublicanVotes, totalDemocratVotes, totalOtherVotes };
 }
 
@@ -58,7 +53,6 @@ export function displayPopularVote(popularVoteResults) {
 
 // Recalculate and display popular vote totals for each county in the dataset
 export function recalculateAndDisplayPopularVote(countyData) {
-    console.log("Recalculating and displaying popular vote for each county:", countyData);
     const popularVoteResults = calculatePopularVote(countyData);
     displayPopularVote(popularVoteResults);
 }
