@@ -6,6 +6,7 @@ To Do list:
 -correct north east's electoral vote placements
 -move Hawaii's and Alaska's electoral votes to the correct position
 -make sliders for vote data
+-make it possible to select multiple counties
 
 Far future:
 
