@@ -1,7 +1,6 @@
 import * as d3 from 'd3';
 
 export function createInfoPane() {
-    // Create an information pane for county details (top-right)
     return d3.select("#info-container")
         .attr("class", "info-pane")
         .style("position", "absolute")
@@ -14,7 +13,6 @@ export function createInfoPane() {
 }
 
 export function updateInfoPane(infoPane, county, stateTotalPopulation, countyType) {
-    // Ensure vote counts have default values if undefined
     const republicanVotes = county.Republican || 0;
     const democratVotes = county.Democrat || 0;
     const otherVotes = county.OtherVotes || 0;
@@ -22,7 +20,6 @@ export function updateInfoPane(infoPane, county, stateTotalPopulation, countyTyp
     const percentageDemocrat = county.percentage_democrat || 0;
     const percentageOther = county.percentage_other || 0;
 
-    // Update the info pane content
     infoPane.html(`
         County: ${county.County}, ${county.State}<br>
         Population: ${county.Population.toLocaleString()}<br>
@@ -39,7 +36,6 @@ export function updateInfoPane(infoPane, county, stateTotalPopulation, countyTyp
 }
 
 export function createUpdatePane() {
-    // Create an update pane for inputting new vote totals (bottom-right)
     const updatePane = d3.select("#update-container")
         .attr("class", "update-pane")
         .style("position", "absolute")
@@ -50,44 +46,56 @@ export function createUpdatePane() {
         .style("background-color", "#f0f0f0")
         .style("display", "none");
 
-    // Form fields for entering new votes
     const updateForm = updatePane.append("form");
-    updateForm.append("label").text("New Republican Votes: ");
-    const repInput = updateForm.append("input")
-        .attr("type", "number")
-        .attr("id", "republicanVotes");
-    updateForm.append("br");
-    updateForm.append("label").text("New Democrat Votes: ");
-    const demInput = updateForm.append("input")
-        .attr("type", "number")
-        .attr("id", "democratVotes");
-    updateForm.append("br");
-    updateForm.append("label").text("New Other Votes: ");
-    const otherInput = updateForm.append("input")
-        .attr("type", "number")
-        .attr("id", "otherVotes");
-    updateForm.append("br");
 
-    const submitButton = updateForm.append("button")
-        .text("Update Votes");
+    // Create sliders with labels
+    const createSlider = (labelText, id) => {
+        updateForm.append("label").text(labelText);
+        return updateForm.append("input")
+            .attr("type", "range")
+            .attr("min", 0)
+            .attr("max", 100)
+            .attr("value", 33)  // Initial equal distribution
+            .attr("id", id)
+            .style("width", "20%");
+    };
 
-    // Add the reset button to the update form (for a single county)
-    const resetButton = updateForm.append("button")
-        .text("Reset County")
-        .style("margin-left", "10px");
+    const repSlider = createSlider("Republican %:", "repSlider");
+    const demSlider = createSlider("Democrat %:", "demSlider");
+    const otherSlider = createSlider("Other %:", "otherSlider");
 
-    return { updatePane, repInput, demInput, otherInput, submitButton, resetButton };
+    // Adjust sliders to maintain a total of 100%
+    const adjustSliders = (changedSlider) => {
+        const total = +repSlider.property("value") + +demSlider.property("value") + +otherSlider.property("value");
+
+        if (total !== 100) {
+            const diff = total - 100;
+            if (changedSlider === "repSlider") demSlider.property("value", +demSlider.property("value") - diff / 2);
+            else if (changedSlider === "demSlider") repSlider.property("value", +repSlider.property("value") - diff / 2);
+            else otherSlider.property("value", +otherSlider.property("value") - diff / 2);
+        }
+
+        updateCountyVoteData();
+    };
+
+    // Event listeners for sliders
+    repSlider.on("input", () => adjustSliders("repSlider"));
+    demSlider.on("input", () => adjustSliders("demSlider"));
+    otherSlider.on("input", () => adjustSliders("otherSlider"));
+
+    const submitButton = updateForm.append("button").text("Update Votes");
+    const resetButton = updateForm.append("button").text("Reset County").style("margin-left", "10px");
+
+    return { updatePane, repSlider, demSlider, otherSlider, submitButton, resetButton };
 }
 
 export function createTooltip() {
-    // Create a tooltip div
     return d3.select("#tooltip-container")
         .attr("class", "tooltip")
         .style("display", "none");
 }
 
 export function updateTooltip(tooltip, d, event) {
-    // Update the tooltip content and position with all vote types
     const percentageRepublican = d.properties.percentage_republican || 0;
     const percentageDemocrat = d.properties.percentage_democrat || 0;
     const percentageOther = d.properties.percentage_other || 0;
@@ -105,12 +113,10 @@ export function updateTooltip(tooltip, d, event) {
 }
 
 export function hideTooltip(tooltip) {
-    // Hide the tooltip
     tooltip.style("display", "none");
 }
 
 export function createResetAllButton() {
-    // Create the reset all button
     return d3.select("body").append("button")
         .text("Reset All Counties")
         .style("position", "absolute")

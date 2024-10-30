@@ -1,7 +1,7 @@
 import './styles.css';
 import * as d3 from 'd3';
 import { json } from 'd3-fetch';
-import { updateVoteTotals, updateCountyColor, resetCountyVotes, initializeCountyDataArray, countyDataArray } from './voteUpdates.js';  // Import countyDataArray
+import { updateVoteTotals, updateCountyColor, resetCountyVotes, initializeCountyDataArray, countyDataArray } from './voteUpdates.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
 import { createInfoPane, createUpdatePane, createTooltip, updateInfoPane, updateTooltip, hideTooltip, createResetAllButton } from './paneSetup.js';
 import { createZoomControls } from './zoom.js';
@@ -9,7 +9,7 @@ import './statemap.js';
 
 export function initializeMapInteractions() {
     const infoPane = createInfoPane();
-    const { updatePane, repInput, demInput, otherInput, submitButton, resetButton } = createUpdatePane();
+    const { updatePane, repSlider, demSlider, otherSlider, submitButton, resetButton } = createUpdatePane();
     const tooltip = createTooltip();
     const resetAllButton = createResetAllButton();
 
@@ -23,14 +23,14 @@ export function initializeMapInteractions() {
     createZoomControls(svg, width, height);
 
     json('data/geojson-counties-fips.json').then(geoData => {
-        const usFipsCodes = countyDataArray.map(d => d.FIPS);  // Using countyDataArray
+        const usFipsCodes = countyDataArray.map(d => d.FIPS);
         const filteredGeoData = {
             type: "FeatureCollection",
             features: geoData.features.filter(feature => usFipsCodes.includes(+feature.id))
         };
 
         filteredGeoData.features.forEach(feature => {
-            const countyData = countyDataArray.find(d => d.FIPS === +feature.id);  // Find in countyDataArray
+            const countyData = countyDataArray.find(d => d.FIPS === +feature.id);
             if (countyData) {
                 feature.properties = { ...countyData };
             }
@@ -59,38 +59,67 @@ export function initializeMapInteractions() {
                 hideTooltip(tooltip);
             })
             .on("click", function(event, d) {
+                const totalVotes = d.properties.Republican + d.properties.Democrat + d.properties.OtherVotes;
                 const stateTotalPopulation = countyDataArray
                     .filter(county => county.FIPS !== 51515)
                     .reduce((total, county) => total + county.Population, 0);
-
                 const countyType = d.properties.vote_total > 50000 ? 'Urban' : 'Rural';
 
                 updateInfoPane(infoPane, d.properties, stateTotalPopulation, countyType);
-
                 updatePane.style("display", "block");
-                repInput.property("value", d.properties.Republican);
-                demInput.property("value", d.properties.Democrat);
-                otherInput.property("value", d.properties.OtherVotes);
+
+                repSlider.attr("max", totalVotes).property("value", d.properties.Republican);
+                demSlider.attr("max", totalVotes).property("value", d.properties.Democrat);
+                otherSlider.attr("max", totalVotes).property("value", d.properties.OtherVotes);
+
+                // Function to manage slider adjustment and ensure total vote consistency
+                const updateCountyVoteData = (changedSlider) => {
+                    let repVotes = +repSlider.property("value");
+                    let demVotes = +demSlider.property("value");
+                    let otherVotes = +otherSlider.property("value");
+
+                    if (changedSlider === 'repSlider' && repVotes === totalVotes) {
+                        demVotes = otherVotes = 0;
+                    } else if (changedSlider === 'demSlider' && demVotes === totalVotes) {
+                        repVotes = otherVotes = 0;
+                    } else if (changedSlider === 'otherSlider' && otherVotes === totalVotes) {
+                        repVotes = demVotes = 0;
+                    } else {
+                        let remainingVotes = totalVotes - (changedSlider === 'repSlider' ? repVotes : (changedSlider === 'demSlider' ? demVotes : otherVotes));
+
+                        if (changedSlider === 'repSlider') {
+                            demVotes = Math.min(remainingVotes, demVotes);
+                            otherVotes = remainingVotes - demVotes;
+                        } else if (changedSlider === 'demSlider') {
+                            repVotes = Math.min(remainingVotes, repVotes);
+                            otherVotes = remainingVotes - repVotes;
+                        } else if (changedSlider === 'otherSlider') {
+                            repVotes = Math.min(remainingVotes, repVotes);
+                            demVotes = remainingVotes - repVotes;
+                        }
+                    }
+
+                    repSlider.property("value", repVotes);
+                    demSlider.property("value", demVotes);
+                    otherSlider.property("value", otherVotes);
+
+                    updateVoteTotals(d.properties, repVotes, demVotes, otherVotes);
+
+                    const selectedCountyPath = svg.selectAll("path").filter(f => f.properties.FIPS === d.properties.FIPS);
+                    updateCountyColor(selectedCountyPath, d.properties);
+                    updateInfoPane(infoPane, d.properties, stateTotalPopulation, countyType);
+
+                    recalculateAndDisplayPopularVote(countyDataArray);
+                };
+
+                repSlider.on("input", () => updateCountyVoteData('repSlider'));
+                demSlider.on("input", () => updateCountyVoteData('demSlider'));
+                otherSlider.on("input", () => updateCountyVoteData('otherSlider'));
 
                 submitButton.on("click", function(e) {
                     e.preventDefault();
-                    const newRepublicanVotes = +repInput.property("value");
-                    const newDemocratVotes = +demInput.property("value");
-                    const newOtherVotes = +otherInput.property("value");
-
-                    if (!isNaN(newRepublicanVotes) && !isNaN(newDemocratVotes) && !isNaN(newOtherVotes)) {
-                        updateVoteTotals(d.properties, newRepublicanVotes, newDemocratVotes, newOtherVotes);
-
-                        const selectedCountyPath = svg.selectAll("path").filter(f => f.properties.FIPS === d.properties.FIPS);
-                        updateCountyColor(selectedCountyPath, d.properties);
-
-                        updateInfoPane(infoPane, d.properties, stateTotalPopulation, countyType);
-
-                        updatePane.style("display", "none");
-
-                        // Recalculate popular vote with updated county data in countyDataArray
-                        recalculateAndDisplayPopularVote(countyDataArray);
-                    }
+                    updateCountyVoteData(null);
+                    updatePane.style("display", "none");
                 });
 
                 resetButton.on("click", function(e) {
@@ -101,10 +130,8 @@ export function initializeMapInteractions() {
                     updateCountyColor(selectedCountyPath, d.properties);
 
                     updateInfoPane(infoPane, d.properties, stateTotalPopulation, countyType);
-
                     updatePane.style("display", "none");
 
-                    // Recalculate popular vote with reset county data
                     recalculateAndDisplayPopularVote(countyDataArray);
                 });
             });
@@ -117,13 +144,11 @@ export function initializeMapInteractions() {
                 updateCountyColor(countyPath, feature.properties);
             });
 
-            // Recalculate popular vote for all counties
             recalculateAndDisplayPopularVote(countyDataArray);
         });
     });
 }
 
-// Load vote data and initialize it in countyDataArray for accurate tracking of updates
 d3.csv('data/usacounty_votes.csv').then(data => {
     data.forEach(d => {
         d.Republican = +d.Republican;
@@ -131,9 +156,7 @@ d3.csv('data/usacounty_votes.csv').then(data => {
         d.OtherVotes = +d['Other Votes'];
     });
 
-    // Initialize county data array in voteUpdates for direct updates
     initializeCountyDataArray(data);
-
-    // Display initial popular vote with loaded data
     recalculateAndDisplayPopularVote(countyDataArray);
 });
+
