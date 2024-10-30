@@ -46,9 +46,10 @@ export function createUpdatePane() {
         .style("background-color", "#f0f0f0")
         .style("display", "none");
 
-    const updateForm = updatePane.append("form");
+    const updateForm = updatePane.append("form")
+        .style("display", "flex")
+        .style("flex-direction", "column");  // Stack sliders vertically
 
-    // Create sliders with labels
     const createSlider = (labelText, id) => {
         updateForm.append("label").text(labelText);
         return updateForm.append("input")
@@ -57,14 +58,14 @@ export function createUpdatePane() {
             .attr("max", 100)
             .attr("value", 33)  // Initial equal distribution
             .attr("id", id)
-            .style("width", "20%");
+            .style("width", "100%")  // Full width for consistent layout
+            .style("margin", "5px 0");  // Vertical spacing for each slider
     };
 
     const repSlider = createSlider("Republican %:", "repSlider");
     const demSlider = createSlider("Democrat %:", "demSlider");
     const otherSlider = createSlider("Other %:", "otherSlider");
 
-    // Adjust sliders to maintain a total of 100%
     const adjustSliders = (changedSlider) => {
         const total = +repSlider.property("value") + +demSlider.property("value") + +otherSlider.property("value");
 
@@ -78,13 +79,12 @@ export function createUpdatePane() {
         updateCountyVoteData();
     };
 
-    // Event listeners for sliders
     repSlider.on("input", () => adjustSliders("repSlider"));
     demSlider.on("input", () => adjustSliders("demSlider"));
     otherSlider.on("input", () => adjustSliders("otherSlider"));
 
     const submitButton = updateForm.append("button").text("Update Votes");
-    const resetButton = updateForm.append("button").text("Reset County").style("margin-left", "10px");
+    const resetButton = updateForm.append("button").text("Reset County").style("margin-top", "10px");
 
     return { updatePane, repSlider, demSlider, otherSlider, submitButton, resetButton };
 }
@@ -126,3 +126,4 @@ export function createResetAllButton() {
         .style("border", "1px solid #ccc")
         .style("background-color", "#f5f5f5");
 }
+
