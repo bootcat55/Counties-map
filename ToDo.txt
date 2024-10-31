@@ -8,6 +8,7 @@ To Do list:
 -make it possible to select multiple counties
 -ME and NE EC votes by district instead of winner take all
 -toggle between 2000, 2010, and 2020 census electoral votes
+-toggle for blank map and blank counties
 
 Far future:
 
