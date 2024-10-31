@@ -5,8 +5,9 @@ To Do list:
 -Correct Alaska's votes (may change to house district votes)
 -correct north east's electoral vote placements
 -move Hawaii's and Alaska's electoral votes to the correct position
--make sliders for vote data
 -make it possible to select multiple counties
+-ME and NE EC votes by district instead of winner take all
+-toggle between 2000, 2010, and 2020 census electoral votes
 
 Far future:
 
