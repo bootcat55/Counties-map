@@ -77,26 +77,22 @@ export function initializeMapInteractions() {
                     let repVotes = +repSlider.property("value");
                     let demVotes = +demSlider.property("value");
                     let otherVotes = +otherSlider.property("value");
+                    let remainingVotes = totalVotes - otherVotes;
 
-                    if (changedSlider === 'repSlider' && repVotes === totalVotes) {
-                        demVotes = otherVotes = 0;
-                    } else if (changedSlider === 'demSlider' && demVotes === totalVotes) {
-                        repVotes = otherVotes = 0;
-                    } else if (changedSlider === 'otherSlider' && otherVotes === totalVotes) {
-                        repVotes = demVotes = 0;
-                    } else {
-                        let remainingVotes = totalVotes - (changedSlider === 'repSlider' ? repVotes : (changedSlider === 'demSlider' ? demVotes : otherVotes));
-
-                        if (changedSlider === 'repSlider') {
-                            demVotes = Math.min(remainingVotes, demVotes);
-                            otherVotes = remainingVotes - demVotes;
-                        } else if (changedSlider === 'demSlider') {
-                            repVotes = Math.min(remainingVotes, repVotes);
-                            otherVotes = remainingVotes - repVotes;
-                        } else if (changedSlider === 'otherSlider') {
-                            repVotes = Math.min(remainingVotes, repVotes);
-                            demVotes = remainingVotes - repVotes;
+                    if (changedSlider === 'repSlider') {
+                        if (repVotes > remainingVotes) {
+                            repVotes = remainingVotes;
                         }
+                        demVotes = remainingVotes - repVotes;
+                    } else if (changedSlider === 'demSlider') {
+                        if (demVotes > remainingVotes) {
+                            demVotes = remainingVotes;
+                        }
+                        repVotes = remainingVotes - demVotes;
+                    } else if (changedSlider === 'otherSlider') {
+                        remainingVotes = totalVotes - otherVotes;
+                        repVotes = Math.min(repVotes, remainingVotes);
+                        demVotes = remainingVotes - repVotes;
                     }
 
                     repSlider.property("value", repVotes);
@@ -159,4 +155,3 @@ d3.csv('data/usacounty_votes.csv').then(data => {
     initializeCountyDataArray(data);
     recalculateAndDisplayPopularVote(countyDataArray);
 });
-
