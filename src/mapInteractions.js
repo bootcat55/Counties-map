@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import { json } from 'd3-fetch';
 import { updateVoteTotals, updateCountyColor, resetCountyVotes, initializeCountyDataArray, countyDataArray } from './voteUpdates.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
-import { createInfoPane, createUpdatePane, createTooltip, updateInfoPane, updateTooltip, hideTooltip, createResetAllButton } from './paneSetup.js';
+import { createInfoPane, createUpdatePane, createTooltip, updateInfoPane, updateTooltip, hideTooltip, createResetAllButton, updateSliderPercentages } from './paneSetup.js';
 import { createZoomControls } from './zoom.js';
 import './statemap.js';
 
@@ -78,6 +78,9 @@ export function initializeMapInteractions() {
                 demSlider.attr("max", totalVotes).property("value", d.properties.Democrat);
                 otherSlider.attr("max", totalVotes).property("value", d.properties.OtherVotes);
 
+                // Initial update of percentages
+                updateSliderPercentages(d.properties.Republican, d.properties.Democrat, d.properties.OtherVotes, totalVotes);
+
                 const updateCountyVoteData = (changedSlider) => {
                     let repVotes = +repSlider.property("value");
                     let demVotes = +demSlider.property("value");
@@ -100,9 +103,13 @@ export function initializeMapInteractions() {
                         demVotes = remainingVotes - repVotes;
                     }
 
+                    // Update slider values
                     repSlider.property("value", repVotes);
                     demSlider.property("value", demVotes);
                     otherSlider.property("value", otherVotes);
+
+                    // Update percentages
+                    updateSliderPercentages(repVotes, demVotes, otherVotes, totalVotes);
 
                     updateVoteTotals(d.properties, repVotes, demVotes, otherVotes);
 
@@ -160,6 +167,7 @@ d3.csv('data/usacounty_votes.csv').then(data => {
     initializeCountyDataArray(data);
     recalculateAndDisplayPopularVote(countyDataArray);
 });
+
 
 
 

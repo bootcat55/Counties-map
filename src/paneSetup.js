@@ -1,4 +1,5 @@
 import * as d3 from 'd3';
+import { calculateCountyVotes } from './voteLogic.js';
 
 export function createInfoPane() {
     return d3.select("#info-container")
@@ -50,8 +51,11 @@ export function createUpdatePane() {
         .style("display", "flex")
         .style("flex-direction", "column");  // Stack sliders vertically
 
-    const createSlider = (labelText, id) => {
-        updateForm.append("label").text(labelText);
+    const votingInfo = updateForm.append("div").attr("id", "voting-info").style("margin-bottom", "10px");
+
+    const createSlider = (labelText, id, percentageId, color) => {
+        updateForm.append("label")
+            .html(`<span style="font-weight: bold; color: ${color};">${labelText}</span> <span id="${percentageId}">(0%)</span>`);
         return updateForm.append("input")
             .attr("type", "range")
             .attr("min", 0)
@@ -62,31 +66,41 @@ export function createUpdatePane() {
             .style("margin", "5px 0");  // Vertical spacing for each slider
     };
 
-    const repSlider = createSlider("Republican %:", "repSlider");
-    const demSlider = createSlider("Democrat %:", "demSlider");
-    const otherSlider = createSlider("Other %:", "otherSlider");
-
-    const adjustSliders = (changedSlider) => {
-        const total = +repSlider.property("value") + +demSlider.property("value") + +otherSlider.property("value");
-
-        if (total !== 100) {
-            const diff = total - 100;
-            if (changedSlider === "repSlider") demSlider.property("value", +demSlider.property("value") - diff / 2);
-            else if (changedSlider === "demSlider") repSlider.property("value", +repSlider.property("value") - diff / 2);
-            else otherSlider.property("value", +otherSlider.property("value") - diff / 2);
-        }
-
-        updateCountyVoteData();
-    };
-
-    repSlider.on("input", () => adjustSliders("repSlider"));
-    demSlider.on("input", () => adjustSliders("demSlider"));
-    otherSlider.on("input", () => adjustSliders("otherSlider"));
+    const repSlider = createSlider("Republican:", "repSlider", "repPercentage", "red");
+    const demSlider = createSlider("Democrat:", "demSlider", "demPercentage", "blue");
+    const otherSlider = createSlider("Other:", "otherSlider", "otherPercentage", "purple");
 
     const submitButton = updateForm.append("button").text("Update Votes");
     const resetButton = updateForm.append("button").text("Reset County").style("margin-top", "10px");
 
     return { updatePane, repSlider, demSlider, otherSlider, submitButton, resetButton };
+}
+
+export function updateSliderPane(updatePane, county) {
+    const votingInfo = d3.select("#voting-info");
+    const republicanVotes = county.Republican || 0;
+    const democratVotes = county.Democrat || 0;
+    const otherVotes = county.OtherVotes || 0;
+    const percentageRepublican = county.percentage_republican || 0;
+    const percentageDemocrat = county.percentage_democrat || 0;
+    const percentageOther = county.percentage_other || 0;
+
+    votingInfo.html(`
+        <strong>Current Votes:</strong><br>
+        - <span style="color: red;">Republican:</span> ${republicanVotes.toLocaleString()} (${percentageRepublican.toFixed(1)}%)<br>
+        - <span style="color: blue;">Democrat:</span> ${democratVotes.toLocaleString()} (${percentageDemocrat.toFixed(1)}%)<br>
+        - <span style="color: purple;">Other:</span> ${otherVotes.toLocaleString()} (${percentageOther.toFixed(1)}%)<br>
+    `);
+}
+
+export function updateSliderPercentages(repVotes, demVotes, otherVotes, totalVotes) {
+    const repPercentage = ((repVotes / totalVotes) * 100).toFixed(1) || 0;
+    const demPercentage = ((demVotes / totalVotes) * 100).toFixed(1) || 0;
+    const otherPercentage = ((otherVotes / totalVotes) * 100).toFixed(1) || 0;
+
+    d3.select("#repPercentage").text(`(${repPercentage}%)`);
+    d3.select("#demPercentage").text(`(${demPercentage}%)`);
+    d3.select("#otherPercentage").text(`(${otherPercentage}%)`);
 }
 
 export function createTooltip() {
@@ -126,4 +140,5 @@ export function createResetAllButton() {
         .style("border", "1px solid #ccc")
         .style("background-color", "#f5f5f5");
 }
+
 
