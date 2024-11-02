@@ -8,7 +8,6 @@ To Do list:
 -make it possible to select multiple counties
 -ME and NE EC votes by district instead of winner take all
 -toggle for blank map and blank counties
--update state populations fields
 
 Far future:
 
