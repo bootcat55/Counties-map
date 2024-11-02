@@ -59,6 +59,12 @@ export function initializeMapInteractions() {
                 hideTooltip(tooltip);
             })
             .on("click", function(event, d) {
+                // Remove highlight from any previously selected county
+                svg.selectAll("path").attr("stroke", "none").attr("stroke-width", 0);
+
+                // Highlight the selected county with a white border
+                d3.select(this).attr("stroke", "white").attr("stroke-width", 2);
+
                 const totalVotes = d.properties.Republican + d.properties.Democrat + d.properties.OtherVotes;
                 const stateTotalPopulation = countyDataArray
                     .filter(county => county.FIPS !== 51515)
@@ -72,7 +78,6 @@ export function initializeMapInteractions() {
                 demSlider.attr("max", totalVotes).property("value", d.properties.Democrat);
                 otherSlider.attr("max", totalVotes).property("value", d.properties.OtherVotes);
 
-                // Function to manage slider adjustment and ensure total vote consistency
                 const updateCountyVoteData = (changedSlider) => {
                     let repVotes = +repSlider.property("value");
                     let demVotes = +demSlider.property("value");
@@ -155,3 +160,7 @@ d3.csv('data/usacounty_votes.csv').then(data => {
     initializeCountyDataArray(data);
     recalculateAndDisplayPopularVote(countyDataArray);
 });
+
+
+
+
