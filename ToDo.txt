@@ -9,6 +9,7 @@ To Do list:
 -ME and NE EC votes by district instead of winner take all
 -toggle between 2000, 2010, and 2020 census electoral votes
 -toggle for blank map and blank counties
+-update state populations fields
 
 Far future:
 
