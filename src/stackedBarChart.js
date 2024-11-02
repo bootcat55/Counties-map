@@ -1,6 +1,8 @@
 import * as d3 from 'd3';
-import { stateElectoralVotes } from './electoralVotes.js';
+import { stateElectoralVotes, stateElectoralVotes2024 } from './electoralVotes.js';
 import { voteMap, stateColorToggle } from './stateData.js';
+
+let use2024Votes = false;  // Track whether to use 2024 electoral votes
 
 // Function to draw the stacked bar chart with a 270 electoral vote marker
 export function drawStackedBarChart(results) {
@@ -89,16 +91,19 @@ function calculateElectoralVotesFromMap(voteMap, stateColorToggle) {
     let democratVotes = 0;
     let tooCloseToCallVotes = 0;
 
+    // Choose the correct electoral vote data set based on the toggle
+    const electoralVotesData = use2024Votes ? stateElectoralVotes2024 : stateElectoralVotes;
+
     voteMap.forEach((votes, state) => {
         // Check for a manual override color
         const overrideColor = stateColorToggle.get(state);
 
         if (overrideColor === "red") {
-            republicanVotes += stateElectoralVotes[state];
+            republicanVotes += electoralVotesData[state];
         } else if (overrideColor === "blue") {
-            democratVotes += stateElectoralVotes[state];
+            democratVotes += electoralVotesData[state];
         } else if (overrideColor === "gray") {
-            tooCloseToCallVotes += stateElectoralVotes[state];
+            tooCloseToCallVotes += electoralVotesData[state];
         } else {
             // No override, use actual vote comparison based on percentages
             const totalVotes = votes.totalRepublican + votes.totalDemocrat + votes.totalOther;
@@ -106,11 +111,11 @@ function calculateElectoralVotesFromMap(voteMap, stateColorToggle) {
             const percentageDemocrat = (votes.totalDemocrat / totalVotes) * 100;
 
             if (percentageRepublican > percentageDemocrat) {
-                republicanVotes += stateElectoralVotes[state];
+                republicanVotes += electoralVotesData[state];
             } else if (percentageDemocrat > percentageRepublican) {
-                democratVotes += stateElectoralVotes[state];
+                democratVotes += electoralVotesData[state];
             } else {
-                tooCloseToCallVotes += stateElectoralVotes[state];
+                tooCloseToCallVotes += electoralVotesData[state];
             }
         }
     });
@@ -118,7 +123,7 @@ function calculateElectoralVotesFromMap(voteMap, stateColorToggle) {
     return { republicanVotes, democratVotes, tooCloseToCallVotes };
 }
 
-// Update the chart based on county vote updates or state color toggles
+// Update the chart based on county vote updates, state color toggles, or electoral vote toggle
 function updateChart() {
     const electoralResults = calculateElectoralVotesFromMap(voteMap, stateColorToggle);
     drawStackedBarChart(electoralResults);
@@ -128,3 +133,10 @@ function updateChart() {
 window.addEventListener('countyVoteUpdated', updateChart);
 window.addEventListener('stateColorToggled', updateChart);
 window.addEventListener('stateColorChangedByVotes', updateChart);
+
+// Listen for the toggle event from the state map to switch between 2024 and default electoral votes
+window.addEventListener('electoralVoteToggle', () => {
+    use2024Votes = !use2024Votes;
+    updateChart();  // Redraw the chart with updated electoral votes
+});
+
