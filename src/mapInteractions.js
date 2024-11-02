@@ -59,15 +59,13 @@ export function initializeMapInteractions() {
                 hideTooltip(tooltip);
             })
             .on("click", function(event, d) {
-                // Remove highlight from any previously selected county
                 svg.selectAll("path").attr("stroke", "none").attr("stroke-width", 0);
 
-                // Highlight the selected county with a white border
                 d3.select(this).attr("stroke", "white").attr("stroke-width", 2);
 
                 const totalVotes = d.properties.Republican + d.properties.Democrat + d.properties.OtherVotes;
                 const stateTotalPopulation = countyDataArray
-                    .filter(county => county.FIPS !== 51515)
+                    .filter(county => county.State === d.properties.State && county.FIPS !== 51515)
                     .reduce((total, county) => total + county.Population, 0);
                 const countyType = d.properties.vote_total > 50000 ? 'Urban' : 'Rural';
 
@@ -78,7 +76,6 @@ export function initializeMapInteractions() {
                 demSlider.attr("max", totalVotes).property("value", d.properties.Democrat);
                 otherSlider.attr("max", totalVotes).property("value", d.properties.OtherVotes);
 
-                // Initial update of percentages
                 updateSliderPercentages(d.properties.Republican, d.properties.Democrat, d.properties.OtherVotes, totalVotes);
 
                 const updateCountyVoteData = (changedSlider) => {
@@ -103,12 +100,10 @@ export function initializeMapInteractions() {
                         demVotes = remainingVotes - repVotes;
                     }
 
-                    // Update slider values
                     repSlider.property("value", repVotes);
                     demSlider.property("value", demVotes);
                     otherSlider.property("value", otherVotes);
 
-                    // Update percentages
                     updateSliderPercentages(repVotes, demVotes, otherVotes, totalVotes);
 
                     updateVoteTotals(d.properties, repVotes, demVotes, otherVotes);
@@ -167,8 +162,3 @@ d3.csv('data/usacounty_votes.csv').then(data => {
     initializeCountyDataArray(data);
     recalculateAndDisplayPopularVote(countyDataArray);
 });
-
-
-
-
-
