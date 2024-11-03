@@ -124,7 +124,7 @@ body {
 
 #text-box {
     position: absolute;
-    top: 10px;
+    top: 60px;
     right: 10px;
     padding: 10px;
     color: orange;
@@ -132,4 +132,44 @@ body {
     background-color: rgba(0, 0, 0, 0.5); /* Optional: semi-transparent background */
     border-radius: 4px;
     max-width: 200px;
+}
+
+/* Navbar styling */
+.navbar {
+    background-color: #2e2e2e; /* Dark grey background */
+    padding: 10px 0;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    text-align: center;
+}
+
+.nav-menu {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.nav-menu li {
+    display: inline;
+}
+
+.nav-menu a {
+    color: #ffffff; /* White text color */
+    text-decoration: none;
+    font-weight: bold;
+    padding: 10px 15px;
+}
+
+.nav-menu a:hover {
+    background-color: #444444; /* Slightly lighter grey on hover */
+    border-radius: 5px;
+}
+
+body {
+    margin-top: 50px; /* Adjust to ensure content isn't hidden behind the navbar */
 }

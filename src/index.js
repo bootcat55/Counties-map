@@ -22,7 +22,7 @@ function readCsvFile(url, callback) {
 
             // Exclude Bedford City from turnout calculation
             if (d.FIPS !== 51515) {
-                d.turnout = ((d.Population - d.vote_total) / d.Population) * 100 || 0;
+                d.turnout = (d.vote_total / d.Population) * 100 || 0;
                 d.originalVotes = {
                     Republican: d.Republican,
                     Democrat: d.Democrat,
