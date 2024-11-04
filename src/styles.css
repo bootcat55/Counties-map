@@ -137,8 +137,8 @@ body {
 /* Navbar styling */
 .navbar {
     background-color: #2e2e2e; /* Dark grey background */
+    margin-bottom: 50px; /* Adjust this value as needed for desired spacing */
     padding: 10px 0;
-    position: fixed;
     top: 0;
     width: 100%;
     z-index: 1000;
@@ -168,8 +168,4 @@ body {
 .nav-menu a:hover {
     background-color: #444444; /* Slightly lighter grey on hover */
     border-radius: 5px;
-}
-
-body {
-    margin-top: 50px; /* Adjust to ensure content isn't hidden behind the navbar */
 }
