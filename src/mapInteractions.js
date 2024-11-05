@@ -1,11 +1,11 @@
 import './styles.css';
 import * as d3 from 'd3';
 import { json } from 'd3-fetch';
-import { updateVoteTotals, updateCountyColor, resetCountyVotes, initializeCountyDataArray, countyDataArray } from './voteUpdates.js';
+import { updateVoteTotals, initializeCountyDataArray, countyDataArray } from './voteUpdates.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
 import { createInfoPane, createUpdatePane, createTooltip, updateInfoPane, updateTooltip, hideTooltip, createResetAllButton, updateSliderPercentages } from './paneSetup.js';
 import { createZoomControls } from './zoom.js';
-import './statemap.js';
+import { updateCountyColor, resetCountyVotes } from './voteLogic.js'; // Import color update and reset functions
 
 export function initializeMapInteractions() {
     const infoPane = createInfoPane();

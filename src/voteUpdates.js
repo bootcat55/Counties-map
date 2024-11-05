@@ -2,11 +2,10 @@ import * as d3 from 'd3';
 import { calculateCountyVotes } from './voteLogic.js';
 import { voteMap } from './stateData.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
-import { updateStateColor } from './statemap.js'; // Ensure this function is imported
+import { updateCountyColor, resetCountyVotes } from './voteLogic.js'; // Import color update and reset functions
 
-// Define county data arrays
 export let countyDataArray = [];  // Array to store current data per county
-let originalCountyDataArray = []; // Array to store a backup of the original CSV data
+export let originalCountyDataArray = []; // Export this array for access in voteLogic.js
 
 // Initialize countyDataArray and backup the original data
 export function initializeCountyDataArray(data) {
@@ -52,53 +51,5 @@ export function updateVoteTotals(county, newRepublicanVotes, newDemocratVotes, n
     recalculateAndDisplayPopularVote(countyDataArray);
 }
 
-// Update the color of a county based on the latest percentages
-export function updateCountyColor(path, county) {
-    if (county.percentage_republican > county.percentage_democrat) {
-        path.attr("fill", d3.interpolateReds(county.percentage_republican / 100));
-    } else if (county.percentage_democrat > county.percentage_republican) {
-        path.attr("fill", d3.interpolateBlues(county.percentage_democrat / 100));
-    } else {
-        path.attr("fill", county.vote_total === 0 ? "#ccc" : "purple");
-    }
-}
-
-// Reset a county’s votes to original and update color
-export function resetCountyVotes(county) {
-    const originalCounty = originalCountyDataArray.find(c => c.FIPS === county.FIPS);
-    if (originalCounty) {
-        county.Republican = originalCounty.Republican;
-        county.Democrat = originalCounty.Democrat;
-        county.OtherVotes = originalCounty.OtherVotes;
-
-        calculateCountyVotes(county);
-
-        const countyIndex = countyDataArray.findIndex(c => c.FIPS === county.FIPS);
-        if (countyIndex !== -1) {
-            countyDataArray[countyIndex] = { ...originalCounty };  // Restore original data
-        }
-
-        // Recalculate the total votes for the state
-        const stateCounties = countyDataArray.filter(c => c.State === county.State);
-        const totalRepublican = stateCounties.reduce((sum, c) => sum + c.Republican, 0);
-        const totalDemocrat = stateCounties.reduce((sum, c) => sum + c.Democrat, 0);
-        const totalOther = stateCounties.reduce((sum, c) => sum + c.OtherVotes, 0);
-
-        // Update the state's totals in voteMap
-        voteMap.set(county.State, {
-            totalRepublican,
-            totalDemocrat,
-            totalOther
-        });
-
-        // Update the state color immediately
-        updateStateColor(county.State);
-
-        // Dispatch event to recalculate the stacked bar chart
-        window.dispatchEvent(new Event('stateColorChangedByVotes'));
-
-        recalculateAndDisplayPopularVote(countyDataArray);
-    }
-}
 
 
