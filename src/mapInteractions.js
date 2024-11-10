@@ -1,17 +1,20 @@
 import './styles.css';
 import * as d3 from 'd3';
 import { json } from 'd3-fetch';
-import { updateVoteTotals, initializeCountyDataArray, countyDataArray } from './voteUpdates.js';
+import { initializeCountyDataArray, countyDataArray } from './voteUpdates.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
-import { createInfoPane, createUpdatePane, createTooltip, updateInfoPane, updateTooltip, hideTooltip, createResetAllButton, updateSliderPercentages } from './paneSetup.js';
+import { createInfoPane, createUpdatePane, createTooltip, createResetAllButton } from './paneSetup.js';
 import { createZoomControls } from './zoom.js';
-import { updateCountyColor, resetCountyVotes } from './voteLogic.js'; // Import color update and reset functions
+import { setupMouseEvents } from './mouseEvents.js';
 
 export function initializeMapInteractions() {
     const infoPane = createInfoPane();
     const { updatePane, repSlider, demSlider, otherSlider, submitButton, resetButton } = createUpdatePane();
     const tooltip = createTooltip();
     const resetAllButton = createResetAllButton();
+
+    const sliders = { repSlider, demSlider, otherSlider };
+    const buttons = { submitButton, resetButton };
 
     const width = 1200;
     const height = 900;
@@ -39,111 +42,37 @@ export function initializeMapInteractions() {
         const projection = d3.geoAlbersUsa().fitSize([width, height], filteredGeoData);
         const pathGenerator = d3.geoPath().projection(projection);
 
-        const paths = svg.selectAll("path")
+        // Render map paths
+        svg.selectAll("path.map-layer")
             .data(filteredGeoData.features)
             .enter()
             .append("path")
+            .attr("class", "map-layer")
             .attr("d", pathGenerator)
             .attr("fill", d => d.properties.percentage_republican > d.properties.percentage_democrat
                 ? d3.interpolateReds(d.properties.percentage_republican / 100)
                 : d3.interpolateBlues(d.properties.percentage_democrat / 100))
-            .attr("stroke", "none")
-            .on("mouseover", function(event, d) {
-                updateTooltip(tooltip, d, event);
-            })
-            .on("mousemove", function(event) {
-                tooltip.style("left", (event.pageX + 10) + "px")
-                       .style("top", (event.pageY - 20) + "px");
-            })
-            .on("mouseout", function() {
-                hideTooltip(tooltip);
-            })
-            .on("click", function(event, d) {
-                svg.selectAll("path").attr("stroke", "none").attr("stroke-width", 0);
+            .attr("stroke", "none");
 
-                d3.select(this).attr("stroke", "white").attr("stroke-width", 2);
+        // Add interaction layer
+        const interactionLayer = svg.append("g").attr("class", "interaction-layer");
 
-                const totalVotes = d.properties.Republican + d.properties.Democrat + d.properties.OtherVotes;
-                const stateTotalPopulation = countyDataArray
-                    .filter(county => county.State === d.properties.State && county.FIPS !== 51515)
-                    .reduce((total, county) => total + county.Population, 0);
-                const countyType = d.properties.vote_total > 50000 ? 'Urban' : 'Rural';
+        interactionLayer.selectAll("path")
+            .data(filteredGeoData.features)
+            .enter()
+            .append("path")
+            .attr("class", "interaction-layer")
+            .attr("d", pathGenerator)
+            .attr("fill", "transparent");
 
-                updateInfoPane(infoPane, d.properties, stateTotalPopulation, countyType);
-                updatePane.style("display", "block");
+        // Setup mouse events
+        setupMouseEvents(interactionLayer, tooltip, updatePane, sliders, buttons, svg, infoPane, projection);
 
-                repSlider.attr("max", totalVotes).property("value", d.properties.Republican);
-                demSlider.attr("max", totalVotes).property("value", d.properties.Democrat);
-                otherSlider.attr("max", totalVotes).property("value", d.properties.OtherVotes);
-
-                updateSliderPercentages(d.properties.Republican, d.properties.Democrat, d.properties.OtherVotes, totalVotes);
-
-                const updateCountyVoteData = (changedSlider) => {
-                    let repVotes = +repSlider.property("value");
-                    let demVotes = +demSlider.property("value");
-                    let otherVotes = +otherSlider.property("value");
-                    let remainingVotes = totalVotes - otherVotes;
-
-                    if (changedSlider === 'repSlider') {
-                        if (repVotes > remainingVotes) {
-                            repVotes = remainingVotes;
-                        }
-                        demVotes = remainingVotes - repVotes;
-                    } else if (changedSlider === 'demSlider') {
-                        if (demVotes > remainingVotes) {
-                            demVotes = remainingVotes;
-                        }
-                        repVotes = remainingVotes - demVotes;
-                    } else if (changedSlider === 'otherSlider') {
-                        remainingVotes = totalVotes - otherVotes;
-                        repVotes = Math.min(repVotes, remainingVotes);
-                        demVotes = remainingVotes - repVotes;
-                    }
-
-                    repSlider.property("value", repVotes);
-                    demSlider.property("value", demVotes);
-                    otherSlider.property("value", otherVotes);
-
-                    updateSliderPercentages(repVotes, demVotes, otherVotes, totalVotes);
-
-                    updateVoteTotals(d.properties, repVotes, demVotes, otherVotes);
-
-                    const selectedCountyPath = svg.selectAll("path").filter(f => f.properties.FIPS === d.properties.FIPS);
-                    updateCountyColor(selectedCountyPath, d.properties);
-                    updateInfoPane(infoPane, d.properties, stateTotalPopulation, countyType);
-
-                    recalculateAndDisplayPopularVote(countyDataArray);
-                };
-
-                repSlider.on("input", () => updateCountyVoteData('repSlider'));
-                demSlider.on("input", () => updateCountyVoteData('demSlider'));
-                otherSlider.on("input", () => updateCountyVoteData('otherSlider'));
-
-                submitButton.on("click", function(e) {
-                    e.preventDefault();
-                    updateCountyVoteData(null);
-                    updatePane.style("display", "none");
-                });
-
-                resetButton.on("click", function(e) {
-                    e.preventDefault();
-                    resetCountyVotes(d.properties);
-
-                    const selectedCountyPath = svg.selectAll("path").filter(f => f.properties.FIPS === d.properties.FIPS);
-                    updateCountyColor(selectedCountyPath, d.properties);
-
-                    updateInfoPane(infoPane, d.properties, stateTotalPopulation, countyType);
-                    updatePane.style("display", "none");
-
-                    recalculateAndDisplayPopularVote(countyDataArray);
-                });
-            });
-
-        resetAllButton.on("click", function(e) {
+        resetAllButton.on("click", function (e) {
             e.preventDefault();
-            filteredGeoData.features.forEach(function(feature) {
+            filteredGeoData.features.forEach(function (feature) {
                 resetCountyVotes(feature.properties);
-                const countyPath = svg.selectAll("path").filter(d => d.properties.FIPS === feature.properties.FIPS);
+                const countyPath = svg.selectAll("path.map-layer").filter(d => d.properties.FIPS === feature.properties.FIPS);
                 updateCountyColor(countyPath, feature.properties);
             });
 
@@ -162,3 +91,4 @@ d3.csv('data/usacounty_votes.csv').then(data => {
     initializeCountyDataArray(data);
     recalculateAndDisplayPopularVote(countyDataArray);
 });
+
