@@ -20,19 +20,12 @@ export function updateVoteTotals(county, newRepublicanVotes, newDemocratVotes, n
 
     calculateCountyVotes(county);
 
-    // Update county in countyDataArray
     const countyIndex = countyDataArray.findIndex(c => c.FIPS === county.FIPS);
     if (countyIndex !== -1) {
         countyDataArray[countyIndex] = { ...county };
     }
 
-    let updatedStateVotes = voteMap.get(county.State) || { totalRepublican: 0, totalDemocrat: 0, totalOther: 0 };
-
-    updatedStateVotes.totalRepublican += county.Republican;
-    updatedStateVotes.totalDemocrat += county.Democrat;
-    updatedStateVotes.totalOther += county.OtherVotes;
-
-    voteMap.set(county.State, updatedStateVotes);
+    updateStateVotes(county.State); // Recalculate state-level votes
 
     const event = new CustomEvent('countyVoteUpdated', {
         detail: {
@@ -46,8 +39,17 @@ export function updateVoteTotals(county, newRepublicanVotes, newDemocratVotes, n
     window.dispatchEvent(event);
     window.dispatchEvent(new Event('stateColorChangedByVotes'));
 
-    // Recalculate popular vote with updated countyDataArray
     recalculateAndDisplayPopularVote(countyDataArray);
+}
+
+// Utility to update state vote totals in voteMap
+function updateStateVotes(state) {
+    const stateCounties = countyDataArray.filter(c => c.State === state);
+    const totalRepublican = d3.sum(stateCounties, c => c.Republican);
+    const totalDemocrat = d3.sum(stateCounties, c => c.Democrat);
+    const totalOther = d3.sum(stateCounties, c => c.OtherVotes);
+
+    voteMap.set(state, { totalRepublican, totalDemocrat, totalOther });
 }
 
 
