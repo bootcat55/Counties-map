@@ -1,5 +1,4 @@
 import * as d3 from 'd3';
-import { calculateCountyVotes } from './voteLogic.js';
 
 export function createInfoPane() {
     return d3.select("#info-container")
