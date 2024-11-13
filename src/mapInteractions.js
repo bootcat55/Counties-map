@@ -6,6 +6,7 @@ import { recalculateAndDisplayPopularVote } from './popularVote.js';
 import { createInfoPane, createUpdatePane, createTooltip, createResetAllButton } from './paneSetup.js';
 import { createZoomControls } from './zoom.js';
 import { setupMouseEvents } from './mouseEvents.js';
+import { resetCountyVotes, updateCountyColor } from './voteLogic.js';
 
 export function initializeMapInteractions() {
     const infoPane = createInfoPane();

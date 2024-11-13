@@ -2,8 +2,7 @@ import * as d3 from 'd3';
 import { calculateCountyVotes } from './voteLogic.js';
 import { voteMap } from './stateData.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
-import { updateCountyColor, resetCountyVotes } from './voteLogic.js'; // Import color update and reset functions
-
+import { resetCountyVotes, updateCountyColor } from './voteLogic.js';
 export let countyDataArray = [];  // Array to store current data per county
 export let originalCountyDataArray = []; // Export this array for access in voteLogic.js
 

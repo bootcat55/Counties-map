@@ -20,21 +20,19 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
             hideTooltip(tooltip);
         })
         .on("click", function (event, d) {
-            // Clear previous highlights
             interactionLayer.selectAll("path").attr("stroke", "none").attr("stroke-width", 0);
-
-            // Highlight the clicked county
             d3.select(this).attr("stroke", "white").attr("stroke-width", 2);
 
             const totalVotes = d.properties.Republican + d.properties.Democrat + d.properties.OtherVotes;
             const stateTotalPopulation = countyDataArray
-                .filter(county => county.State === d.properties.State && county.FIPS !== 51515)
+                .filter(county => county.State === d.properties.State)
                 .reduce((total, county) => total + county.Population, 0);
             const countyType = d.properties.vote_total > 50000 ? 'Urban' : 'Rural';
 
             updateInfoPane(infoPane, d.properties, stateTotalPopulation, countyType);
             updatePane.style("display", "block");
 
+            // Set slider maximums and current values dynamically
             repSlider.attr("max", totalVotes).property("value", d.properties.Republican);
             demSlider.attr("max", totalVotes).property("value", d.properties.Democrat);
             otherSlider.attr("max", totalVotes).property("value", d.properties.OtherVotes);
@@ -48,14 +46,10 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
                 let remainingVotes = totalVotes - otherVotes;
 
                 if (changedSlider === 'repSlider') {
-                    if (repVotes > remainingVotes) {
-                        repVotes = remainingVotes;
-                    }
+                    repVotes = Math.min(repVotes, remainingVotes);
                     demVotes = remainingVotes - repVotes;
                 } else if (changedSlider === 'demSlider') {
-                    if (demVotes > remainingVotes) {
-                        demVotes = remainingVotes;
-                    }
+                    demVotes = Math.min(demVotes, remainingVotes);
                     repVotes = remainingVotes - demVotes;
                 } else if (changedSlider === 'otherSlider') {
                     remainingVotes = totalVotes - otherVotes;
@@ -68,7 +62,6 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
                 otherSlider.property("value", otherVotes);
 
                 updateSliderPercentages(repVotes, demVotes, otherVotes, totalVotes);
-
                 updateVoteTotals(d.properties, repVotes, demVotes, otherVotes);
 
                 const selectedCountyPath = svg.selectAll("path.map-layer").filter(f => f.properties.FIPS === d.properties.FIPS);
@@ -102,4 +95,3 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
             });
         });
 }
-
