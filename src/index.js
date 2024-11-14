@@ -1,9 +1,9 @@
 import './styles.css';
 import * as d3 from 'd3';
 import { drawStackedBarChart } from './stackedBarChart.js';
-import { calculateElectoralVotes, calculateCountyVotes } from './voteLogic.js';  // Ensure calculateCountyVotes is imported
+import { calculateElectoralVotes, calculateCountyVotes } from './voteManager.js';  // Ensure calculateCountyVotes is imported
 import { initializeMapInteractions } from './mapInteractions.js';
-import { initializeCountyDataArray } from './voteUpdates.js';
+import { initializeCountyDataArray } from './voteManager.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
 import './statemap.js';
 

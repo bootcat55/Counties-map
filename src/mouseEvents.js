@@ -1,7 +1,7 @@
 import * as d3 from 'd3';
 import { updateTooltip, hideTooltip, updateInfoPane, updateSliderPercentages } from './paneSetup.js';
-import { updateVoteTotals, countyDataArray } from './voteUpdates.js';
-import { resetCountyVotes, updateCountyColor } from './voteLogic.js';
+import { updateVoteTotals, countyDataArray } from './voteManager.js';
+import { resetCountyVotes, updateCountyColor } from './voteManager.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
 
 let selectedCounties = []; // Track selected counties
