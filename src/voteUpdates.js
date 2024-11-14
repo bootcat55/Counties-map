@@ -4,29 +4,40 @@ import { voteMap } from './stateData.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
 
 export let countyDataArray = [];  // Array to store current data per county
-export let originalCountyDataArray = []; // Export this array for access in voteLogic.js
+export let originalCountyDataArray = []; // Backup array for resetting to original values
 
 // Initialize countyDataArray and backup the original data
 export function initializeCountyDataArray(data) {
-    originalCountyDataArray = data.map(county => ({ ...county }));  // Backup the original CSV data
-    countyDataArray = data.map(county => ({ ...county }));          // Initialize working data array
+    originalCountyDataArray = data.map(county => ({ ...county }));  // Backup original data
+    countyDataArray = data.map(county => ({ ...county }));          // Initialize working array
 }
 
-// Update vote totals for a county and recalculate popular vote with updated data
+// Update vote totals for a county and ensure totals are valid
 export function updateVoteTotals(county, newRepublicanVotes, newDemocratVotes, newOtherVotes) {
-    county.Republican = +newRepublicanVotes || 0;
-    county.Democrat = +newDemocratVotes || 0;
-    county.OtherVotes = +newOtherVotes || 0;
+    const totalVotes = county.vote_total; // Fixed total vote pool
+    const fixedOtherVotes = county.OtherVotes; // Preserve "Other Votes"
+
+    // Adjust Republican and Democrat votes while respecting the fixed total
+    let adjustedRepVotes = Math.max(0, Math.min(totalVotes - fixedOtherVotes, newRepublicanVotes || 0));
+    let adjustedDemVotes = Math.max(0, totalVotes - fixedOtherVotes - adjustedRepVotes);
+
+    // Update the county data
+    county.Republican = adjustedRepVotes;
+    county.Democrat = adjustedDemVotes;
+    county.OtherVotes = fixedOtherVotes; // Keep "Other Votes" unchanged
 
     calculateCountyVotes(county);
 
+    // Update the working array
     const countyIndex = countyDataArray.findIndex(c => c.FIPS === county.FIPS);
     if (countyIndex !== -1) {
         countyDataArray[countyIndex] = { ...county };
     }
 
-    updateStateVotes(county.State); // Recalculate state-level votes
+    // Recalculate state-level totals
+    updateStateVotes(county.State);
 
+    // Dispatch events to update the map and vote display
     const event = new CustomEvent('countyVoteUpdated', {
         detail: {
             state: county.State,
@@ -37,8 +48,6 @@ export function updateVoteTotals(county, newRepublicanVotes, newDemocratVotes, n
         }
     });
     window.dispatchEvent(event);
-    window.dispatchEvent(new Event('stateColorChangedByVotes'));
-
     recalculateAndDisplayPopularVote(countyDataArray);
 }
 
@@ -51,6 +60,3 @@ function updateStateVotes(state) {
 
     voteMap.set(state, { totalRepublican, totalDemocrat, totalOther });
 }
-
-
-
