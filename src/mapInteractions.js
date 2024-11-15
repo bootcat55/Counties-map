@@ -7,6 +7,7 @@ import { createInfoPane, createUpdatePane, createTooltip, createResetAllButton }
 import { createZoomControls } from './zoom.js';
 import { setupMouseEvents } from './mouseEvents.js';
 import { resetCountyVotes, updateCountyColor } from './voteManager.js';
+import { setupSliders } from './sliderHandler.js';
 
 export function initializeMapInteractions() {
     const infoPane = createInfoPane();
@@ -66,7 +67,7 @@ export function initializeMapInteractions() {
             .attr("d", pathGenerator)
             .attr("fill", "transparent");
 
-        // Setup mouse events
+        // Setup mouse events and sliders
         setupMouseEvents(interactionLayer, tooltip, updatePane, sliders, buttons, svg, infoPane, projection);
 
         resetAllButton.on("click", function (e) {
@@ -92,4 +93,3 @@ d3.csv('data/usacounty_votes.csv').then(data => {
     initializeCountyDataArray(data);
     recalculateAndDisplayPopularVote(countyDataArray);
 });
-
