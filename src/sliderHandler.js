@@ -8,59 +8,87 @@ export function setupSliders(sliders, buttons, selectedCounties, updatePane, inf
     const { repSlider, demSlider, otherSlider } = sliders;
     const { submitButton, resetButton } = buttons;
 
+    const updateSliderPercentages = (repVotes, demVotes, otherVotes) => {
+        const totalVotes = repVotes + demVotes + otherVotes;
+        const repPercentage = ((repVotes / totalVotes) * 100).toFixed(1) || 0;
+        const demPercentage = ((demVotes / totalVotes) * 100).toFixed(1) || 0;
+        const otherPercentage = ((otherVotes / totalVotes) * 100).toFixed(1) || 0;
+
+        d3.select("#repPercentage").text(`(${repPercentage}%)`);
+        d3.select("#demPercentage").text(`(${demPercentage}%)`);
+        d3.select("#otherPercentage").text(`(${otherPercentage}%)`);
+    };
+
     const handleSliderInput = (changedSlider) => {
-        let repVotes = +repSlider.property('value');
-        let demVotes = +demSlider.property('value');
-        const otherFixed = +otherSlider.property('value');
-        const remainingPool = totalVotes - otherFixed;
+        let repVotes = +repSlider.property("value");
+        let demVotes = +demSlider.property("value");
+        let otherVotes = +otherSlider.property("value");
 
-        if (changedSlider !== 'otherSlider') {
-            const swingDiff = remainingPool - (repVotes + demVotes);
-            if (changedSlider === 'repSlider') demVotes += swingDiff;
-            else if (changedSlider === 'demSlider') repVotes += swingDiff;
+        const remainingPool = totalVotes - otherVotes;
 
-            repVotes = Math.max(0, Math.min(remainingPool, repVotes));
-            demVotes = Math.max(0, remainingPool - repVotes);
+        if (changedSlider === "repSlider") {
+            demVotes = remainingPool - repVotes;
+        } else if (changedSlider === "demSlider") {
+            repVotes = remainingPool - demVotes;
+        } else if (changedSlider === "otherSlider") {
+            otherVotes = Math.max(0, Math.min(totalVotes, otherVotes));
         }
 
-        repSlider.property('value', repVotes);
-        demSlider.property('value', demVotes);
+        // Enforce boundaries
+        repVotes = Math.max(0, Math.min(remainingPool, repVotes));
+        demVotes = Math.max(0, remainingPool - repVotes);
 
-        const updateSliderPercentages = (repVotes, demVotes, otherVotes, totalVotes) => {
-            d3.select('#repPercentage').text(`(${((repVotes / totalVotes) * 100).toFixed(1)}%)`);
-            d3.select('#demPercentage').text(`(${((demVotes / totalVotes) * 100).toFixed(1)}%)`);
-            d3.select('#otherPercentage').text(`(${((otherVotes / totalVotes) * 100).toFixed(1)}%)`);
-        };
+        // Update slider values
+        repSlider.property("value", repVotes);
+        demSlider.property("value", demVotes);
+        otherSlider.property("value", otherVotes);
 
-        updateSliderPercentages(repVotes, demVotes, otherFixed, totalVotes);
+        updateSliderPercentages(repVotes, demVotes, otherVotes);
 
+        // Update counties
         selectedCounties.forEach((county) => {
-            updateVoteTotals(county, repVotes, demVotes, otherFixed);
-            const countyPath = svg.selectAll('path.map-layer').filter((f) => f.properties.FIPS === county.FIPS);
+            updateVoteTotals(county, repVotes, demVotes, otherVotes);
+            const countyPath = svg.selectAll("path.map-layer").filter((f) => f.properties.FIPS === county.FIPS);
             updateCountyColor(countyPath, county);
         });
 
         recalculateAndDisplayPopularVote(countyDataArray);
+
+        const firstCounty = selectedCounties[0];
+        updateInfoPane(infoPane, {
+            ...firstCounty,
+            Republican: repVotes,
+            Democrat: demVotes,
+            OtherVotes: otherVotes,
+        }, firstCounty.Population, firstCounty.vote_total > 50000 ? "Urban" : "Rural");
     };
 
-    repSlider.on('input', () => handleSliderInput('repSlider'));
-    demSlider.on('input', () => handleSliderInput('demSlider'));
-    otherSlider.on('input', () => handleSliderInput('otherSlider'));
+    // Attach event listeners
+    repSlider.on("input", () => handleSliderInput("repSlider"));
+    demSlider.on("input", () => handleSliderInput("demSlider"));
+    otherSlider.on("input", () => handleSliderInput("otherSlider"));
 
-    submitButton.on('click', (e) => {
+    submitButton.on("click", (e) => {
         e.preventDefault();
-        updatePane.style('display', 'none');
+        updatePane.style("display", "none");
     });
 
-    resetButton.on('click', (e) => {
+    resetButton.on("click", (e) => {
         e.preventDefault();
         selectedCounties.forEach((county) => {
             resetCountyVotes(county);
-            const countyPath = svg.selectAll('path.map-layer').filter((f) => f.properties.FIPS === county.FIPS);
+            const countyPath = svg.selectAll("path.map-layer").filter((f) => f.properties.FIPS === county.FIPS);
             updateCountyColor(countyPath, county);
         });
         selectedCounties.length = 0;
-        updatePane.style('display', 'none');
+        updatePane.style("display", "none");
         recalculateAndDisplayPopularVote(countyDataArray);
     });
+
+    // Initialize sliders
+    repSlider.attr("max", totalVotes).property("value", aggregatedVotes.Republican);
+    demSlider.attr("max", totalVotes).property("value", aggregatedVotes.Democrat);
+    otherSlider.attr("max", totalVotes).property("value", aggregatedVotes.OtherVotes);
+
+    updateSliderPercentages(aggregatedVotes.Republican, aggregatedVotes.Democrat, aggregatedVotes.OtherVotes);
 }
