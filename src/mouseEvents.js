@@ -27,6 +27,8 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
                 d3.select(this).attr("stroke", "white").attr("stroke-width", 2);
             }
 
+            console.log("Number of selected counties:", countSelectedCounties()); // Output the count
+
             if (selectedCounties.length > 0) {
                 updatePane.style("display", "block");
 
@@ -54,4 +56,8 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
                 updatePane.style("display", "none");
             }
         });
+}
+
+export function countSelectedCounties() {
+    return selectedCounties.length;
 }
