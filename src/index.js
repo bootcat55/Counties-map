@@ -18,21 +18,23 @@ function readCsvFile(url, callback) {
             d.vote_total = d.Republican + d.Democrat + d.OtherVotes;
             d.Population = +d.Population || 0;
 
-            // Exclude Bedford City from turnout calculation
-            if (d.FIPS !== 51515 && d.vote_total > 0) {
+            // Calculate percentages only for counties with valid votes
+            if (d.vote_total > 0) {
                 d.percentage_republican = (d.Republican / d.vote_total) * 100 || 0;
                 d.percentage_democrat = (d.Democrat / d.vote_total) * 100 || 0;
-                d.originalVotes = {
-                    Republican: d.Republican,
-                    Democrat: d.Democrat,
-                    OtherVotes: d.OtherVotes,
-                };
             } else {
                 d.percentage_republican = 0;
                 d.percentage_democrat = 0;
             }
+
+            d.originalVotes = {
+                Republican: d.Republican,
+                Democrat: d.Democrat,
+                OtherVotes: d.OtherVotes,
+            };
         });
 
+        // Save data to global array
         initializeCountyDataArray(data);
         callback(data);
     });

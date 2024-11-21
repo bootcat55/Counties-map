@@ -26,15 +26,26 @@ export function initializeMapInteractions() {
     createZoomControls(svg, width, height);
 
     json('data/geojson-counties-fips.json').then(geoData => {
-        const usFipsCodes = countyDataArray.map(d => d.FIPS);
+        const bedfordCityFIPS = 51515;
+        const bedfordCountyFIPS = 51019;
+
         const filteredGeoData = {
             type: "FeatureCollection",
-            features: geoData.features.filter(feature => usFipsCodes.includes(+feature.id))
+            features: geoData.features.filter(feature => {
+                return countyDataArray.some(d => d.FIPS === +feature.id);
+            })
         };
 
         filteredGeoData.features.forEach(feature => {
             const countyData = countyDataArray.find(d => d.FIPS === +feature.id);
-            if (countyData) {
+
+            if (+feature.id === bedfordCityFIPS) {
+                // Assign Bedford City's properties from Bedford County
+                const bedfordCountyData = countyDataArray.find(d => d.FIPS === bedfordCountyFIPS);
+                if (bedfordCountyData) {
+                    feature.properties = { ...bedfordCountyData };
+                }
+            } else if (countyData) {
                 feature.properties = { ...countyData };
             }
         });
@@ -61,7 +72,7 @@ export function initializeMapInteractions() {
                 } else {
                     return "#ccc"; // Default for no data or ties
                 }
-            })
+            });
 
         // Debugging: Log any issues with missing properties
         filteredGeoData.features.forEach(d => {
