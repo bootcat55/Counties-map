@@ -16,6 +16,7 @@ function readCsvFile(url, callback) {
             d.Republican = +d.Republican || 0;
             d.Democrat = +d.Democrat || 0;
             d.OtherVotes = +d['Other Votes'] || 0;
+            d.vote_total = d.Republican + d.Democrat + d.OtherVotes; // Total votes
             d.Population = +d.Population || 0;
 
             calculateCountyVotes(d);
