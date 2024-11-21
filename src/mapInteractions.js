@@ -1,12 +1,11 @@
 import './styles.css';
 import * as d3 from 'd3';
 import { json } from 'd3-fetch';
-import { initializeCountyDataArray, countyDataArray, resetCountyVotes, updateCountyColor } from './voteManager.js';
+import { countyDataArray, resetCountyVotes, updateCountyColor } from './voteManager.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
 import { createInfoPane, createUpdatePane, createTooltip, createResetAllButton } from './paneSetup.js';
 import { createZoomControls } from './zoom.js';
 import { setupMouseEvents } from './mouseEvents.js';
-import { setupSliders } from './sliderHandler.js';
 
 export function initializeMapInteractions() {
     const infoPane = createInfoPane();
@@ -50,10 +49,27 @@ export function initializeMapInteractions() {
             .append("path")
             .attr("class", "map-layer")
             .attr("d", pathGenerator)
-            .attr("fill", d => d.properties.percentage_republican > d.properties.percentage_democrat
-                ? d3.interpolateReds(d.properties.percentage_republican / 100)
-                : d3.interpolateBlues(d.properties.percentage_democrat / 100))
-            .attr("stroke", "none");
+            .attr("fill", d => {
+                const properties = d.properties || {};
+                const repPercentage = properties.percentage_republican ?? 0;
+                const demPercentage = properties.percentage_democrat ?? 0;
+
+                if (repPercentage > demPercentage) {
+                    return d3.interpolateReds(repPercentage / 100);
+                } else if (demPercentage > repPercentage) {
+                    return d3.interpolateBlues(demPercentage / 100);
+                } else {
+                    return "#ccc"; // Default for no data or ties
+                }
+            })
+
+        // Debugging: Log any issues with missing properties
+        filteredGeoData.features.forEach(d => {
+            const props = d.properties || {};
+            if (!props.percentage_republican && !props.percentage_democrat) {
+                console.warn("Missing data for county:", props);
+            }
+        });
 
         // Add interaction layer
         const interactionLayer = svg.append("g").attr("class", "interaction-layer");
@@ -66,7 +82,7 @@ export function initializeMapInteractions() {
             .attr("d", pathGenerator)
             .attr("fill", "transparent");
 
-        // Setup mouse events and sliders
+        // Setup mouse events
         setupMouseEvents(interactionLayer, tooltip, updatePane, sliders, buttons, svg, infoPane, projection);
 
         resetAllButton.on("click", function (e) {
@@ -81,15 +97,3 @@ export function initializeMapInteractions() {
         });
     });
 }
-
-d3.csv('data/usacounty_votes.csv').then(data => {
-    data.forEach(d => {
-        d.Republican = +d.Republican;
-        d.Democrat = +d.Democrat;
-        d.OtherVotes = +d['Other Votes'];
-        d.vote_total = d.Republican + d.Democrat + d.OtherVotes; // Total votes
-    });
-
-    initializeCountyDataArray(data);
-    recalculateAndDisplayPopularVote(countyDataArray);
-});
