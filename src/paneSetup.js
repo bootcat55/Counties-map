@@ -28,9 +28,9 @@ export function updateInfoPane(infoPane, county, stateTotalPopulation, countyTyp
         democratVotes = county.Democrat || 0;
         otherVotes = county.OtherVotes || 0;
 
-        percentageRepublican = (county.percentage_republican || 0).toFixed(1);
-        percentageDemocrat = (county.percentage_democrat || 0).toFixed(1);
-        percentageOther = (county.percentage_other || 0).toFixed(1);
+        percentageRepublican = ((republicanVotes / (republicanVotes + democratVotes + otherVotes)) * 100).toFixed(1) || 0;
+        percentageDemocrat = ((democratVotes / (republicanVotes + democratVotes + otherVotes)) * 100).toFixed(1) || 0;
+        percentageOther = ((otherVotes / (republicanVotes + democratVotes + otherVotes)) * 100).toFixed(1) || 0;
     }
 
     infoPane.html(`
