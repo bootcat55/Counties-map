@@ -7,96 +7,90 @@ export function setupSliders(sliders, buttons, selectedCounties, updatePane, inf
     const { repSlider, demSlider, otherSlider } = sliders;
     const { submitButton, resetButton } = buttons;
 
-    const updateSliderPercentages = (repVotes, demVotes, otherVotes) => {
-        const total = repVotes + demVotes + otherVotes;
-        const repPercentage = ((repVotes / total) * 100).toFixed(1) || 0;
-        const demPercentage = ((demVotes / total) * 100).toFixed(1) || 0;
-        const otherPercentage = ((otherVotes / total) * 100).toFixed(1) || 0;
+    const updateSliderPercentages = () => {
+        const totalVotes = selectedCounties.reduce((totals, county) => {
+            totals.Republican += county.Republican;
+            totals.Democrat += county.Democrat;
+            totals.OtherVotes += county.OtherVotes;
+            return totals;
+        }, { Republican: 0, Democrat: 0, OtherVotes: 0 });
+
+        const total = totalVotes.Republican + totalVotes.Democrat + totalVotes.OtherVotes;
+        const repPercentage = ((totalVotes.Republican / total) * 100).toFixed(2) || 0;
+        const demPercentage = ((totalVotes.Democrat / total) * 100).toFixed(2) || 0;
+        const otherPercentage = ((totalVotes.OtherVotes / total) * 100).toFixed(2) || 0;
 
         d3.select("#repPercentage").text(`(${repPercentage}%)`);
         d3.select("#demPercentage").text(`(${demPercentage}%)`);
         d3.select("#otherPercentage").text(`(${otherPercentage}%)`);
+
+        repSlider.property("value", Math.round(repPercentage));
+        demSlider.property("value", Math.round(demPercentage));
+        otherSlider.property("value", Math.round(otherPercentage));
+    };
+
+    const calculateSwing = (newPercentage, originalPercentage) => newPercentage - originalPercentage;
+
+    const applySwingToCounty = (county, swingPercentage) => {
+        const totalVotes = county.Republican + county.Democrat + county.OtherVotes;
+        county.Republican = Math.max(0, Math.round(county.Republican * (1 + swingPercentage / 100)));
+        county.Democrat = Math.max(0, Math.round(county.Democrat * (1 - swingPercentage / 100)));
+        county.OtherVotes = Math.max(0, totalVotes - county.Republican - county.Democrat);
+        calculateCountyVotes(county);
+    };
+
+    const updateInfoPaneWithTotalVotes = () => {
+        const totalVotes = selectedCounties.reduce((totals, county) => {
+            totals.Republican += county.Republican;
+            totals.Democrat += county.Democrat;
+            totals.OtherVotes += county.OtherVotes;
+            return totals;
+        }, { Republican: 0, Democrat: 0, OtherVotes: 0 });
+
+        const totalPopulation = selectedCounties.reduce((sum, county) => sum + county.Population, 0);
+
+        updateInfoPane(infoPane, {
+            County: "Selected Counties",
+            State: "",
+            Republican: totalVotes.Republican,
+            Democrat: totalVotes.Democrat,
+            OtherVotes: totalVotes.OtherVotes,
+            Population: totalPopulation,
+        }, totalPopulation, "");
     };
 
     let previousSliderValues = { rep: 50, dem: 50, other: 0 }; // Initial percentages
 
-    const handleSliderInput = (changedSlider) => {
-        // Retrieve current slider values
-        let repVotes = +repSlider.property("value");
-        let demVotes = +demSlider.property("value");
-        let otherVotes = +otherSlider.property("value");
-    
-        // Calculate total slider votes
-        const totalSliderVotes = repVotes + demVotes + otherVotes;
-    
-        // Normalize slider percentages
-        const currentRepPercentage = (repVotes / totalSliderVotes) * 100;
-        const currentDemPercentage = (demVotes / totalSliderVotes) * 100;
-        const currentOtherPercentage = (otherVotes / totalSliderVotes) * 100;
-    
-        // Determine swing adjustment
-        const repSwing = currentRepPercentage - previousSliderValues.rep;
-        const demSwing = currentDemPercentage - previousSliderValues.dem;
-        const otherSwing = currentOtherPercentage - previousSliderValues.other;
-    
-        // Adjust votes dynamically for each selected county
+    const handleSliderInput = () => {
+        let repPercentage = +repSlider.property("value");
+        let demPercentage = +demSlider.property("value");
+        let otherPercentage = +otherSlider.property("value");
+
+        const totalSliderPercentage = repPercentage + demPercentage + otherPercentage;
+        const normalizedRepPercentage = (repPercentage / totalSliderPercentage) * 100;
+        const swingPercentage = calculateSwing(normalizedRepPercentage, previousSliderValues.rep);
+
         selectedCounties.forEach((county) => {
-            const originalTotalVotes = county.Republican + county.Democrat + county.OtherVotes;
-    
-            // Apply swing to Republican votes
-            county.Republican = Math.round(county.Republican + (repSwing / 100) * originalTotalVotes);
-    
-            // Apply swing to Democrat votes
-            county.Democrat = Math.round(county.Democrat + (demSwing / 100) * originalTotalVotes);
-    
-            // Adjust "Other Votes" to maintain total consistency
-            county.OtherVotes = Math.max(
-                0,
-                originalTotalVotes - county.Republican - county.Democrat
-            );
-    
-            // Recalculate percentages for this county
-            calculateCountyVotes(county);
-    
-            // Update the county's color on the map
+            applySwingToCounty(county, swingPercentage);
             const countyPath = svg.selectAll("path.map-layer").filter(f => f.properties.FIPS === county.FIPS);
             updateCountyColor(countyPath, county);
         });
-    
-        // Update previous slider values
-        previousSliderValues = {
-            rep: currentRepPercentage,
-            dem: currentDemPercentage,
-            other: currentOtherPercentage,
-        };
-    
-        // Recalculate and update popular vote totals across all counties
+
+        previousSliderValues.rep = normalizedRepPercentage;
         recalculateAndDisplayPopularVote(countyDataArray);
-    
-        // Update the info pane with the first selected county
-        const firstCounty = selectedCounties[0];
-        if (firstCounty) {
-            updateInfoPane(infoPane, {
-                ...firstCounty,
-                Republican: firstCounty.Republican,
-                Democrat: firstCounty.Democrat,
-                OtherVotes: firstCounty.OtherVotes,
-            }, firstCounty.Population, firstCounty.vote_total > 50000 ? "Urban" : "Rural");
-        }
-    
-        // Update slider percentages display
-        updateSliderPercentages(
-            Math.round(currentRepPercentage),
-            Math.round(currentDemPercentage),
-            Math.round(currentOtherPercentage)
-        );
+
+        updateInfoPaneWithTotalVotes();
+        updateSliderPercentages();
     };
-    
-    // Attach dynamic handlers to sliders
-    repSlider.on("input", () => handleSliderInput("repSlider"));
-    demSlider.on("input", () => handleSliderInput("demSlider"));
-    otherSlider.on("input", () => handleSliderInput("otherSlider"));
-    
+
+    repSlider.attr("max", 100).attr("step", 5).property("value", 50).style("cursor", "pointer");
+    demSlider.attr("max", 100).attr("step", 5).property("value", 50).style("cursor", "pointer");
+    otherSlider.attr("max", 100).attr("step", 5).property("value", 0).style("cursor", "pointer");
+
+    repSlider.on("input", () => handleSliderInput());
+    demSlider.on("input", () => handleSliderInput());
+    otherSlider.on("input", () => handleSliderInput());
+
     submitButton.on("click", (e) => {
         e.preventDefault();
         updatePane.style("display", "none");
@@ -114,9 +108,23 @@ export function setupSliders(sliders, buttons, selectedCounties, updatePane, inf
         recalculateAndDisplayPopularVote(countyDataArray);
     });
 
-    repSlider.attr("max", totalVotes).property("value", aggregatedVotes.Republican);
-    demSlider.attr("max", totalVotes).property("value", aggregatedVotes.Democrat);
-    otherSlider.attr("max", totalVotes).property("value", aggregatedVotes.OtherVotes);
+    updateSliderPercentages();
+    updateInfoPaneWithTotalVotes();
+}
 
-    updateSliderPercentages(aggregatedVotes.Republican, aggregatedVotes.Democrat, aggregatedVotes.OtherVotes);
+export function resetAllSliders(sliders, aggregatedVotes, totalVotes) {
+    const { repSlider, demSlider, otherSlider } = sliders;
+
+    repSlider.attr("max", 100).attr("step", 5).property("value", 50).style("cursor", "pointer");
+    demSlider.attr("max", 100).attr("step", 5).property("value", 50).style("cursor", "pointer");
+    otherSlider.attr("max", 100).attr("step", 5).property("value", 0).style("cursor", "pointer");
+
+    const total = aggregatedVotes.Republican + aggregatedVotes.Democrat + aggregatedVotes.OtherVotes;
+    const repPercentage = ((aggregatedVotes.Republican / total) * 100).toFixed(2) || 0;
+    const demPercentage = ((aggregatedVotes.Democrat / total) * 100).toFixed(2) || 0;
+    const otherPercentage = ((aggregatedVotes.OtherVotes / total) * 100).toFixed(2) || 0;
+
+    d3.select("#repPercentage").text(`(${repPercentage}%)`);
+    d3.select("#demPercentage").text(`(${demPercentage}%)`);
+    d3.select("#otherPercentage").text(`(${otherPercentage}%)`);
 }
