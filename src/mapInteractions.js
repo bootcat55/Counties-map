@@ -1,14 +1,23 @@
 import './styles.css';
 import * as d3 from 'd3';
 import { json } from 'd3-fetch';
-import { countyDataArray, resetCountyVotes, updateCountyColor } from './voteManager.js';
+import { countyDataArray, resetCountyVotes, updateCountyColor, initializeCountyDataArray, updateStateVotes } from './voteManager.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
 import { createInfoPane, createUpdatePane, createTooltip, createResetAllButton } from './paneSetup.js';
 import { createZoomControls } from './zoom.js';
 import { setupMouseEvents } from './mouseEvents.js';
+import { readCsvFile } from './index.js';
+import { createStateMap } from './statemap.js';
 
 export function initializeMapInteractions() {
-    const infoPane = createInfoPane();
+    const infoPane = d3.select("#info-container");
+    const updateContainer = d3.select("#update-container");
+
+    // Clear existing panes to avoid duplication
+    infoPane.html("");
+    updateContainer.html("");
+
+    const infoPaneElement = createInfoPane();
     const { updatePane, repSlider, demSlider, otherSlider, submitButton, resetButton } = createUpdatePane();
     const tooltip = createTooltip();
     const resetAllButton = createResetAllButton();
@@ -19,6 +28,7 @@ export function initializeMapInteractions() {
     const width = 1200;
     const height = 900;
     const svg = d3.select("#county-map")
+        .html("") // Clear existing SVG to ensure a fresh map
         .append("svg")
         .attr("width", width)
         .attr("height", height);
@@ -74,14 +84,6 @@ export function initializeMapInteractions() {
                 }
             });
 
-        // Debugging: Log any issues with missing properties
-        filteredGeoData.features.forEach(d => {
-            const props = d.properties || {};
-            if (!props.percentage_republican && !props.percentage_democrat) {
-                console.warn("Missing data for county:", props);
-            }
-        });
-
         // Add interaction layer
         const interactionLayer = svg.append("g").attr("class", "interaction-layer");
 
@@ -94,7 +96,7 @@ export function initializeMapInteractions() {
             .attr("fill", "transparent");
 
         // Setup mouse events
-        setupMouseEvents(interactionLayer, tooltip, updatePane, sliders, buttons, svg, infoPane, projection);
+        setupMouseEvents(interactionLayer, tooltip, updatePane, sliders, buttons, svg, infoPaneElement, projection);
 
         resetAllButton.on("click", function (e) {
             e.preventDefault();
@@ -108,3 +110,24 @@ export function initializeMapInteractions() {
         });
     });
 }
+
+const dataYearSelector = document.getElementById('data-year-selector');
+
+dataYearSelector.addEventListener('change', (event) => {
+    const selectedYear = event.target.value;
+
+    const filePath = selectedYear === '2024' 
+        ? 'data/2024county_votes.csv' 
+        : 'data/usacounty_votes.csv';
+
+    readCsvFile(filePath, (data) => {
+        // Update county data with the new CSV
+        initializeCountyDataArray(data);
+
+        // Recalculate and display updated popular vote
+        recalculateAndDisplayPopularVote(data);
+
+        // Refresh map interactions
+        initializeMapInteractions();
+    });
+});

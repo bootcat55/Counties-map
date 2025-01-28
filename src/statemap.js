@@ -87,12 +87,9 @@ export function createStateMap() {
 
                 tooltip.html(`
                     <strong>State: ${stateId}</strong><br>
-                    <strong><span style="color: red;">Republican:</span></strong> ${percentageRepublican.toFixed(1)}%<br>
-                    <strong><span style="color: blue;">Democrat:</span></strong> ${percentageDemocrat.toFixed(1)}%<br>
-                    <strong><span style="color: gray;">Other:</span></strong> ${percentageOther.toFixed(1)}%<br>
-                    Republican: ${votes ? votes.totalRepublican : 'N/A'}<br>
-                    Democrat: ${votes ? votes.totalDemocrat : 'N/A'}<br>
-                    Other: ${votes ? votes.totalOther : 'N/A'}
+                    <strong><span style="color: red;">Republican:</span></strong> ${percentageRepublican.toFixed(1)}% (${votes.totalRepublican.toLocaleString()})<br>
+                    <strong><span style="color: blue;">Democrat:</span></strong> ${percentageDemocrat.toFixed(1)}% (${votes.totalDemocrat.toLocaleString()})<br>
+                    <strong><span style="color: gray;">Other:</span></strong> ${percentageOther.toFixed(1)}% (${votes.totalOther.toLocaleString()})
                 `)
                 .style("left", (event.pageX + 10) + "px")
                 .style("top", (event.pageY - 20) + "px");
@@ -236,4 +233,5 @@ window.addEventListener('countyVoteUpdated', function(e) {
 
 // Initialize the state map
 createStateMap();
+
 

@@ -1,12 +1,12 @@
 import * as d3 from 'd3';
 import { stateElectoralVotes } from './electoralVotes.js';
-import { voteMap } from './stateData.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
 import { updateStateColor } from './statemap.js';
+import { voteMap } from './stateData.js';
 
 // Data arrays
-export let countyDataArray = []; // Array to store current data per county
-export let originalCountyDataArray = []; // Backup array for resetting to original values
+export let countyDataArray = [];
+export let originalCountyDataArray = [];
 
 // Initialize county data and backup the original data
 export function initializeCountyDataArray(data) {
@@ -20,6 +20,7 @@ export function calculateCountyVotes(county) {
     county.percentage_republican = county.vote_total ? (county.Republican / county.vote_total) * 100 : 0;
     county.percentage_democrat = county.vote_total ? (county.Democrat / county.vote_total) * 100 : 0;
     county.percentage_other = county.vote_total ? (county.OtherVotes / county.vote_total) * 100 : 0;
+    county.turnout = (county.vote_total / county.Population) * 100 || 0; // Turnout calculation
 }
 
 // Update vote totals for a county and ensure totals are valid
@@ -92,10 +93,10 @@ export function calculateElectoralVotes(data) {
     let tooCloseToCallVotes = 0;
 
     const states = Array.from(new Set(data.map(d => d.State)));
-    states.forEach((state) => {
-        const stateVotes = data.filter((d) => d.State === state);
-        const stateTotalRepublican = d3.sum(stateVotes, (d) => d.Republican);
-        const stateTotalDemocrat = d3.sum(stateVotes, (d) => d.Democrat);
+    states.forEach(state => {
+        const stateVotes = data.filter(d => d.State === state);
+        const stateTotalRepublican = d3.sum(stateVotes, d => d.Republican);
+        const stateTotalDemocrat = d3.sum(stateVotes, d => d.Democrat);
 
         if (stateTotalRepublican > stateTotalDemocrat) {
             republicanVotes += stateElectoralVotes[state];
@@ -110,11 +111,11 @@ export function calculateElectoralVotes(data) {
 }
 
 // Update state-level vote totals
-function updateStateVotes(state) {
-    const stateCounties = countyDataArray.filter((c) => c.State === state);
-    const totalRepublican = d3.sum(stateCounties, (c) => c.Republican);
-    const totalDemocrat = d3.sum(stateCounties, (c) => c.Democrat);
-    const totalOther = d3.sum(stateCounties, (c) => c.OtherVotes);
+export function updateStateVotes(state) {
+    const stateCounties = countyDataArray.filter(c => c.State === state);
+    const totalRepublican = d3.sum(stateCounties, c => c.Republican);
+    const totalDemocrat = d3.sum(stateCounties, c => c.Democrat);
+    const totalOther = d3.sum(stateCounties, c => c.OtherVotes);
 
     voteMap.set(state, { totalRepublican, totalDemocrat, totalOther });
 }

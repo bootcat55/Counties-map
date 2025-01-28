@@ -37,9 +37,7 @@ export function updateInfoPane(infoPane, county, stateTotalPopulation, countyTyp
         County: ${county.County}, ${county.State}<br>
         Population: ${county.Population.toLocaleString()}<br>
         State Total Population: ${stateTotalPopulation.toLocaleString()}<br>
-        
         Vote Turnout: ${(county.turnout || 0).toFixed(1)}%<br>
-        
         Type: ${countyType}<br>
         <strong>Votes:</strong><br>
         - <span style="color: red;">Republican:</span> ${republicanVotes.toLocaleString()} (${percentageRepublican}%)<br>
@@ -125,6 +123,13 @@ export function hideTooltip(tooltip) {
 }
 
 export function createResetAllButton() {
+    // Check if the button already exists
+    let existingButton = d3.select("#reset-all");
+    if (!existingButton.empty()) {
+        return existingButton; // Return the existing button
+    }
+
+    // Create a new button if it doesn't exist
     return d3.select("#reset-all-container")
         .append("button")
         .attr("id", "reset-all")

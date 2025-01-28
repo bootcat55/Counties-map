@@ -1,7 +1,7 @@
 import './styles.css';
 import * as d3 from 'd3';
 import { drawStackedBarChart } from './stackedBarChart.js';
-import { calculateElectoralVotes, initializeCountyDataArray } from './voteManager.js';
+import { calculateElectoralVotes, initializeCountyDataArray, updateStateVotes } from './voteManager.js';
 import { initializeMapInteractions } from './mapInteractions.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
 import './statemap.js';
@@ -18,7 +18,7 @@ function readCsvFile(url, callback) {
             d.vote_total = d.Republican + d.Democrat + d.OtherVotes;
             d.Population = +d.Population || 0;
 
-            // Calculate percentages only for counties with valid votes
+            // Calculate percentages and turnout
             if (d.vote_total > 0) {
                 d.percentage_republican = (d.Republican / d.vote_total) * 100 || 0;
                 d.percentage_democrat = (d.Democrat / d.vote_total) * 100 || 0;
@@ -26,6 +26,7 @@ function readCsvFile(url, callback) {
                 d.percentage_republican = 0;
                 d.percentage_democrat = 0;
             }
+            d.turnout = (d.vote_total / d.Population) * 100 || 0;
 
             d.originalVotes = {
                 Republican: d.Republican,
