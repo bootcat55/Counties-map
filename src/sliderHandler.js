@@ -83,9 +83,9 @@ export function setupSliders(sliders, buttons, selectedCounties, updatePane, inf
         updateSliderPercentages();
     };
 
-    repSlider.attr("max", 100).attr("step", 5).property("value", 50).style("cursor", "pointer");
-    demSlider.attr("max", 100).attr("step", 5).property("value", 50).style("cursor", "pointer");
-    otherSlider.attr("max", 100).attr("step", 5).property("value", 0).style("cursor", "pointer");
+    repSlider.attr("max", 100).attr("step", 1).property("value", 50).style("cursor", "pointer");
+    demSlider.attr("max", 100).attr("step", 1).property("value", 50).style("cursor", "pointer");
+    otherSlider.attr("max", 100).attr("step", 1).property("value", 0).style("cursor", "pointer");
 
     repSlider.on("input", () => handleSliderInput());
     demSlider.on("input", () => handleSliderInput());
