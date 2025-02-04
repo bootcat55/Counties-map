@@ -1,5 +1,28 @@
 import * as d3 from 'd3';
 
+// Helper function to calculate vote percentages
+const calculateVotePercentages = (republicanVotes, democratVotes, otherVotes) => {
+    const totalVotes = republicanVotes + democratVotes + otherVotes;
+    return {
+        republican: ((republicanVotes / totalVotes) * 100).toFixed(1) || 0,
+        democrat: ((democratVotes / totalVotes) * 100).toFixed(1) || 0,
+        other: ((otherVotes / totalVotes) * 100).toFixed(1) || 0,
+    };
+};
+
+// Helper function to generate info pane content
+const generateInfoPaneContent = (county, stateTotalPopulation, countyType, percentages) => `
+    County: ${county.County}, ${county.State}<br>
+    Population: ${county.Population.toLocaleString()}<br>
+    State Total Population: ${stateTotalPopulation.toLocaleString()}<br>
+    Vote Turnout: ${(county.turnout || 0).toFixed(1)}%<br>
+    Type: ${countyType}<br>
+    <strong>Votes:</strong><br>
+    - <span style="color: red;">Republican:</span> ${county.Republican.toLocaleString()} (${percentages.republican}%)<br>
+    - <span style="color: blue;">Democrat:</span> ${county.Democrat.toLocaleString()} (${percentages.democrat}%)<br>
+    - <span style="color: purple;">Other:</span> ${county.OtherVotes.toLocaleString()} (${percentages.other}%)<br>
+`;
+
 export function createInfoPane() {
     return d3.select("#info-container")
         .attr("class", "info-pane")
@@ -13,37 +36,21 @@ export function createInfoPane() {
 }
 
 export function updateInfoPane(infoPane, county, stateTotalPopulation, countyType, aggregatedVotes = null, totalVotes = null) {
-    let republicanVotes, democratVotes, otherVotes, percentageRepublican, percentageDemocrat, percentageOther;
+    let republicanVotes, democratVotes, otherVotes, percentages;
 
     if (aggregatedVotes && totalVotes) {
         republicanVotes = aggregatedVotes.Republican;
         democratVotes = aggregatedVotes.Democrat;
         otherVotes = aggregatedVotes.OtherVotes;
-
-        percentageRepublican = ((republicanVotes / totalVotes) * 100).toFixed(1) || 0;
-        percentageDemocrat = ((democratVotes / totalVotes) * 100).toFixed(1) || 0;
-        percentageOther = ((otherVotes / totalVotes) * 100).toFixed(1) || 0;
     } else {
         republicanVotes = county.Republican || 0;
         democratVotes = county.Democrat || 0;
         otherVotes = county.OtherVotes || 0;
-
-        percentageRepublican = ((republicanVotes / (republicanVotes + democratVotes + otherVotes)) * 100).toFixed(1) || 0;
-        percentageDemocrat = ((democratVotes / (republicanVotes + democratVotes + otherVotes)) * 100).toFixed(1) || 0;
-        percentageOther = ((otherVotes / (republicanVotes + democratVotes + otherVotes)) * 100).toFixed(1) || 0;
     }
 
-    infoPane.html(`
-        County: ${county.County}, ${county.State}<br>
-        Population: ${county.Population.toLocaleString()}<br>
-        State Total Population: ${stateTotalPopulation.toLocaleString()}<br>
-        Vote Turnout: ${(county.turnout || 0).toFixed(1)}%<br>
-        Type: ${countyType}<br>
-        <strong>Votes:</strong><br>
-        - <span style="color: red;">Republican:</span> ${republicanVotes.toLocaleString()} (${percentageRepublican}%)<br>
-        - <span style="color: blue;">Democrat:</span> ${democratVotes.toLocaleString()} (${percentageDemocrat}%)<br>
-        - <span style="color: purple;">Other:</span> ${otherVotes.toLocaleString()} (${percentageOther}%)<br>
-    `).style("display", "block");
+    percentages = calculateVotePercentages(republicanVotes, democratVotes, otherVotes);
+    infoPane.html(generateInfoPaneContent(county, stateTotalPopulation, countyType, percentages))
+        .style("display", "block");
 }
 
 export function createUpdatePane() {
@@ -98,20 +105,22 @@ export function createTooltip() {
         .style("display", "none");
 }
 
-export function updateTooltip(tooltip, d, event) {
-    const totalVotes = d.properties.Republican + d.properties.Democrat + d.properties.OtherVotes;
-    const percentageRepublican = ((d.properties.Republican / totalVotes) * 100).toFixed(1) || 0;
-    const percentageDemocrat = ((d.properties.Democrat / totalVotes) * 100).toFixed(1) || 0;
-    const percentageOther = ((d.properties.OtherVotes / totalVotes) * 100).toFixed(1) || 0;
+export function updateTooltip(tooltip, countyData, event) {
+    const totalVotes = countyData.properties.Republican + countyData.properties.Democrat + countyData.properties.OtherVotes;
+    const percentages = calculateVotePercentages(
+        countyData.properties.Republican,
+        countyData.properties.Democrat,
+        countyData.properties.OtherVotes
+    );
 
     tooltip.html(`
-        <strong>${d.properties.County}, ${d.properties.State}</strong><br>
-        Population: ${d.properties.Population.toLocaleString()}<br>
-        Vote Turnout: ${(d.properties.turnout || 0).toFixed(1)}%<br>
+        <strong>${countyData.properties.County}, ${countyData.properties.State}</strong><br>
+        Population: ${countyData.properties.Population.toLocaleString()}<br>
+        Vote Turnout: ${(countyData.properties.turnout || 0).toFixed(1)}%<br>
         Votes:<br>
-        - <span style="color: red;">Republican:</span> ${d.properties.Republican.toLocaleString()} (${percentageRepublican}%)<br>
-        - <span style="color: blue;">Democrat:</span> ${d.properties.Democrat.toLocaleString()} (${percentageDemocrat}%)<br>
-        - <span style="color: purple;">Other:</span> ${d.properties.OtherVotes.toLocaleString()} (${percentageOther}%)
+        - <span style="color: red;">Republican:</span> ${countyData.properties.Republican.toLocaleString()} (${percentages.republican}%)<br>
+        - <span style="color: blue;">Democrat:</span> ${countyData.properties.Democrat.toLocaleString()} (${percentages.democrat}%)<br>
+        - <span style="color: purple;">Other:</span> ${countyData.properties.OtherVotes.toLocaleString()} (${percentages.other}%)
     `)
     .style("left", (event.pageX + 10) + "px")
     .style("top", (event.pageY - 20) + "px")
@@ -123,13 +132,11 @@ export function hideTooltip(tooltip) {
 }
 
 export function createResetAllButton() {
-    // Check if the button already exists
     let existingButton = d3.select("#reset-all");
     if (!existingButton.empty()) {
-        return existingButton; // Return the existing button
+        return existingButton;
     }
 
-    // Create a new button if it doesn't exist
     return d3.select("#reset-all-container")
         .append("button")
         .attr("id", "reset-all")
