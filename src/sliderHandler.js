@@ -29,29 +29,31 @@ export function setupSliders(sliders, buttons, selectedCounties, updatePane, inf
         otherSlider.property("value", Math.round(otherPercentage));
     };
 
-    const calculateSwing = (newPercentage, originalPercentage) => newPercentage - originalPercentage;
-
-    const applySwingToCounty = (county, swingPercentage) => {
-        const totalVotes = county.Republican + county.Democrat + county.OtherVotes;
-        county.Republican = Math.max(0, Math.round(county.Republican * (1 + swingPercentage / 100)));
-        county.Democrat = Math.max(0, Math.round(county.Democrat * (1 - swingPercentage / 100)));
-        county.OtherVotes = Math.max(0, totalVotes - county.Republican - county.Democrat);
-        calculateCountyVotes(county);
-    };
-
     const updateInfoPaneWithTotalVotes = () => {
+        if (selectedCounties.length === 0) {
+            // If no counties are selected, hide the info pane or display a message
+            infoPane.style("display", "none");
+            return;
+        }
+    
+        // Use the first selected county for the county name and state
+        const firstCounty = selectedCounties[0];
+    
+        // Calculate total votes for all selected counties
         const totalVotes = selectedCounties.reduce((totals, county) => {
             totals.Republican += county.Republican;
             totals.Democrat += county.Democrat;
             totals.OtherVotes += county.OtherVotes;
             return totals;
         }, { Republican: 0, Democrat: 0, OtherVotes: 0 });
-
+    
+        // Calculate total population for all selected counties
         const totalPopulation = selectedCounties.reduce((sum, county) => sum + county.Population, 0);
-
+    
+        // Update the info pane with the first county's name and state, but aggregated votes and population
         updateInfoPane(infoPane, {
-            County: "Selected Counties",
-            State: "",
+            County: firstCounty.County,
+            State: firstCounty.State,
             Republican: totalVotes.Republican,
             Democrat: totalVotes.Democrat,
             OtherVotes: totalVotes.OtherVotes,
