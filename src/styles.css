@@ -1,11 +1,49 @@
 /* Tooltip styling */
 .tooltip {
     position: absolute;
-    background: #fff;
+    background: linear-gradient(to bottom, #ff9999, #99ccff);
     border: 1px solid #000;
-    padding: 5px;
-    display: none;
+    padding: 10px;
+    border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    color: #333;
     pointer-events: none; /* Prevents the tooltip from interfering with mouse events */
+    display: none;
+}
+
+/* Tooltip header */
+.tooltip-header {
+    font-weight: bold;
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+
+/* Tooltip table */
+.tooltip table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tooltip th, .tooltip td {
+    background-color: white; /* White background for cells */
+    padding: 4px 8px;
+    text-align: left;
+}
+
+.tooltip th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+    border-bottom: 1px solid #ddd;
+}
+
+.tooltip td {
+    border-bottom: 1px solid #eee;
+}
+
+.tooltip tr:last-child td {
+    border-bottom: none;
 }
 
 /* Info pane styling */
@@ -14,6 +52,33 @@
     color: #333;
     border-radius: 4px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    background: #fff;
+    padding: 10px;
+}
+
+/* Info pane table */
+.info-pane table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.info-pane th, .info-pane td {
+    padding: 4px 8px;
+    text-align: left;
+}
+
+.info-pane th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+    border-bottom: 1px solid #ddd;
+}
+
+.info-pane td {
+    border-bottom: 1px solid #eee;
+}
+
+.info-pane tr:last-child td {
+    border-bottom: none;
 }
 
 /* Winning party styling */
