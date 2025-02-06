@@ -66,10 +66,33 @@ export function createStateMap() {
                     const percentageOther = (votes.totalOther / totalVotes) * 100;
 
                     tooltip.html(`
-                        <strong>State: ${stateId}</strong><br>
-                        <strong><span style="color: red;">Republican:</span></strong> ${percentageRepublican.toFixed(1)}% (${votes.totalRepublican.toLocaleString()})<br>
-                        <strong><span style="color: blue;">Democrat:</span></strong> ${percentageDemocrat.toFixed(1)}% (${votes.totalDemocrat.toLocaleString()})<br>
-                        <strong><span style="color: gray;">Other:</span></strong> ${percentageOther.toFixed(1)}% (${votes.totalOther.toLocaleString()})
+                        <div class="tooltip-header">${stateId}</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Party</th>
+                                    <th>Votes</th>
+                                    <th>%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span style="color: red;">Republican</span></td>
+                                    <td>${votes.totalRepublican.toLocaleString()}</td>
+                                    <td>${percentageRepublican.toFixed(1)}%</td>
+                                </tr>
+                                <tr>
+                                    <td><span style="color: blue;">Democrat</span></td>
+                                    <td>${votes.totalDemocrat.toLocaleString()}</td>
+                                    <td>${percentageDemocrat.toFixed(1)}%</td>
+                                </tr>
+                                <tr>
+                                    <td><span style="color: gray;">Other</span></td>
+                                    <td>${votes.totalOther.toLocaleString()}</td>
+                                    <td>${percentageOther.toFixed(1)}%</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     `)
                     .style("left", (event.pageX + 10) + "px")
                     .style("top", (event.pageY - 20) + "px")

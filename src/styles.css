@@ -2,7 +2,7 @@
 .tooltip {
     position: absolute;
     background: linear-gradient(to bottom, #ff9999, #99ccff);
-    border: 1px solid #000;
+    border: 1px solid #ccc;
     padding: 10px;
     border-radius: 4px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
@@ -52,14 +52,20 @@
     color: #333;
     border-radius: 4px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    background: #fff;
+    background: linear-gradient(to bottom, #ff9999, #99ccff);
     padding: 10px;
+}
+.info-pane-header {
+    font-weight: bold;
+    font-size: 18px;
+    font-family: "Arial", sans-serif;
 }
 
 /* Info pane table */
 .info-pane table {
     width: 100%;
     border-collapse: collapse;
+    background: white;
 }
 
 .info-pane th, .info-pane td {
