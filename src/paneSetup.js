@@ -1,4 +1,3 @@
-// paneSetup.js
 import * as d3 from 'd3';
 
 // Function to create the info pane
