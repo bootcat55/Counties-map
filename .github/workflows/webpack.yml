@@ -1,4 +1,4 @@
-name: Build and Deploy to GitHub Pages
+name: Build and Deploy with Webpack
 
 on:
   push:
@@ -8,8 +8,8 @@ on:
 
 permissions:
   contents: read
-  pages: write  # Required for GitHub Pages deployment
-  id-token: write  # Required for authentication
+  pages: write
+  id-token: write
 
 jobs:
   build:
@@ -24,21 +24,22 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
-
+          
       - name: Install dependencies
         run: npm ci
 
       - name: Build project
-        run: |
-          npx webpack || (echo "Webpack failed!" && exit 1)
-          ls -lah dist || (echo "No dist folder found!" && exit 1)
+        run: npm run build
 
-      - name: Upload artifact (dist folder)
+      - name: Debug directory structure
+        run: ls -R
+
+      - name: Upload artifact for GitHub Pages
         uses: actions/upload-artifact@v4
         with:
-          name: site-artifact  # This artifact contains the built site
+          name: dist
           path: dist
-          if-no-files-found: error  # Fails if `dist` is missing
+          if-no-files-found: error
 
   deploy:
     needs: build
@@ -51,12 +52,13 @@ jobs:
       - name: Download built artifact
         uses: actions/download-artifact@v4
         with:
-          name: site-artifact  # Matches the uploaded artifact
+          name: github-pages
           path: dist
 
-      - name: Verify artifact contents
-        run: ls -lah dist || (echo "Artifact download failed!" && exit 1)
-
+      - name: Authenticate with GitHub Token
+        run: echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v2
+        with:
+          artifact_name: dist 
