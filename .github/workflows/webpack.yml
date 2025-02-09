@@ -36,7 +36,7 @@ jobs:
         uses: actions/configure-pages@v3
 
       - name: Upload artifact for GitHub Pages
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v2
         with:
           path: dist  # This should be the path to your built files
 
