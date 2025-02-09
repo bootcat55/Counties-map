@@ -27,18 +27,17 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Build
-        run: |
-          npm install
-          npx webpack
+      - name: Install dependencies
+        run: npm install
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v3
+      - name: Build
+        run: npx webpack
 
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-artifact@v4
         with:
-          path: dist  # This should be the path to your built files
+          name: dist-${{ matrix.node-version }}  # Unique artifact name for each Node.js version
+          path: dist  # Path to your built files
 
   deploy:
     environment:
@@ -49,6 +48,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: dist-*  # Download all artifacts matching the pattern
+
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v2
