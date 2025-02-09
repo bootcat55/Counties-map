@@ -28,8 +28,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build project
-        run: npx webpack
+      - name: Build project using npm start
+        run: npm start
 
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v2
