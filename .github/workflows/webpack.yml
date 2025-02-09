@@ -49,12 +49,6 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Download built artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: github-pages
-          path: dist
-
       - name: Authenticate with GitHub Token
         run: echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - name: Deploy to GitHub Pages
