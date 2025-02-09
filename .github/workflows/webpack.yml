@@ -52,7 +52,7 @@ jobs:
           echo "Environment: ${{ github.event_name }}"
           echo "Repository: ${{ github.repository }}"
           echo "Ref: ${{ github.ref }}"
-          echo "GITHUB_TOKEN permissions: ${{ permissions }}"
+          echo "GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}"
 
       - name: Deploy to GitHub Pages
         id: deployment
