@@ -1,4 +1,3 @@
-// sliderHandler.js
 import * as d3 from 'd3';
 import { updateVoteTotals, countyDataArray, resetCountyVotes, updateCountyColor, calculateCountyVotes } from './voteManager.js';
 import { updateInfoPane } from './paneSetup.js';
@@ -45,7 +44,9 @@ export function setupSliders(sliders, buttons, selectedCounties, updatePane, inf
             return totals;
         }, { Republican: 0, Democrat: 0, OtherVotes: 0 });
 
-        const totalPopulation = selectedCounties.reduce((sum, county) => sum + county.Population, 0);
+        const totalStatePopulation = countyDataArray
+            .filter(county => county.State === firstCounty.State)
+            .reduce((sum, county) => sum + county.Population, 0);
 
         updateInfoPane(infoPane, {
             County: firstCounty.County,
@@ -53,8 +54,8 @@ export function setupSliders(sliders, buttons, selectedCounties, updatePane, inf
             Republican: totalVotes.Republican,
             Democrat: totalVotes.Democrat,
             OtherVotes: totalVotes.OtherVotes,
-            Population: totalPopulation,
-        }, totalPopulation, "");
+            Population: totalStatePopulation,
+        }, totalStatePopulation, "");
     };
 
     let previousSliderValues = { rep: 50, dem: 50, other: 0 }; // Initial percentages

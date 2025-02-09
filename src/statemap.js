@@ -1,4 +1,3 @@
-// statemap.js
 import * as d3 from 'd3';
 import { stateElectoralVotes, stateElectoralVotes2024 } from './electoralVotes.js';
 import { voteMap, stateColorToggle, stateLastUpdated } from './stateData.js';
