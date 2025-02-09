@@ -61,3 +61,4 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
 export function countSelectedCounties() {
     return selectedCounties.length;
 }
+

@@ -197,3 +197,4 @@ export function createResetAllButton() {
         .text("Reset All Counties")
         .style("margin-top", "10px");
 }
+
