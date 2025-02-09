@@ -54,7 +54,7 @@ export function setupSliders(sliders, buttons, selectedCounties, updatePane, inf
             Republican: totalVotes.Republican,
             Democrat: totalVotes.Democrat,
             OtherVotes: totalVotes.OtherVotes,
-            Population: totalStatePopulation,
+            Population: firstCounty.Population,
         }, totalStatePopulation, "");
     };
 
