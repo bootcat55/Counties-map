@@ -34,7 +34,7 @@ jobs:
         run: npx webpack
 
       - name: Upload artifact for GitHub Pages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
           name: dist-${{ matrix.node-version }}  # Unique artifact name for each Node.js version
           path: dist  # Path to your built files
