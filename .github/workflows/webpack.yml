@@ -20,26 +20,25 @@ jobs:
         node-version: [18.x, 20.x, 22.x]
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Set up Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Build
+      - name: Install dependencies and build
         run: |
           npm install
           npx webpack
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v3
-
+      # Only upload the artifact from Node.js 22.x to avoid conflicts
       - name: Upload artifact for GitHub Pages
-        uses: actions/upload-artifact@v4
+        if: matrix.node-version == '22.x'
+        uses: actions/upload-pages-artifact@v2
         with:
-          name: github-pages-${{ matrix.node-version }}  # Unique artifact name per Node.js version
-          path: dist  # This should be the path to your built files
+          path: dist  # Ensure this is the correct path to your built files
 
   deploy:
     environment:
@@ -53,5 +52,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v2
-        with:
-          artifact_name: github-pages-22.x  # Match the uploaded artifact from Node.js 22.x
