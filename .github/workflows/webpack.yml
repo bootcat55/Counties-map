@@ -51,7 +51,11 @@ jobs:
       - name: Download built artifact
         uses: actions/download-artifact@v4
         with:
+<<<<<<< HEAD
           name: site-artifact  # Matches the uploaded artifact
+=======
+          name: dist  # Matches the uploaded artifact
+>>>>>>> 76cded03e28129bfc94b051371132597606ed319
           path: dist
 
       - name: Verify artifact contents
