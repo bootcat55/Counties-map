@@ -45,7 +45,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     environment:
-      name: github-pages
+      name: dist
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
@@ -59,6 +59,6 @@ jobs:
         run: echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v3
         with:
           artifact_name: dist
