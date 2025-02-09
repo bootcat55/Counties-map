@@ -38,6 +38,7 @@ jobs:
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-artifact@v4
         with:
+          name: github-pages-${{ matrix.node-version }}  # Unique artifact name per Node.js version
           path: dist  # This should be the path to your built files
 
   deploy:
