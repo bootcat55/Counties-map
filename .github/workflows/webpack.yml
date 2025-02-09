@@ -58,4 +58,4 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v2
         with:
-          artifact_name: dist-v22.x
+          artifact_name: dist-22.x
