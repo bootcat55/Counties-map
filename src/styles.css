@@ -242,3 +242,6 @@ body {
     border-radius: 5px;
 }
 
+#data-year-selector.open + .tooltip {
+    display: none !important;
+}

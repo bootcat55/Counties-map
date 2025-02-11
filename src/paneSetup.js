@@ -134,6 +134,14 @@ export function createTooltip() {
         .style("color", "#333")
         .style("pointer-events", "none")
         .style("display", "none");
+
+        const dropdown = document.getElementById('data-year-selector');
+    if (dropdown) {
+        dropdown.addEventListener("click", function () {
+            tooltip.style("display", "none"); // Hide tooltip when dropdown is clicked
+        });
+    }
+    return tooltip;
 }
 
 // Function to update the tooltip with state vote data

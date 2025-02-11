@@ -6,11 +6,20 @@ import { setupSliders } from './sliderHandler.js';
 let selectedCounties = []; // Track selected counties
 
 export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders, buttons, svg, infoPane) {
+    const dropdown = document.getElementById('data-year-selector'); // Get the dropdown element
     interactionLayer.selectAll("path")
         .on("mouseover", function (event, d) {
+            if (dropdown && dropdown.classList.contains("open")) {
+                hideTooltip(tooltip); // Ensure tooltip is hidden when dropdown is open
+                return;
+            }
             updateTooltip(tooltip, d, event);
         })
         .on("mousemove", function (event) {
+            if (dropdown && dropdown.classList.contains("open")) {
+                hideTooltip(tooltip); // Ensure tooltip is hidden when dropdown is open
+                return;
+            }
             tooltip.style("left", (event.pageX + 10) + "px")
                    .style("top", (event.pageY - 20) + "px");
         })
