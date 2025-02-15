@@ -33,7 +33,7 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
                 d3.select(this).attr("stroke", "none").attr("stroke-width", 0);
             } else {
                 selectedCounties.push(d.properties);
-                d3.select(this).attr("stroke", "white").attr("stroke-width", 2);
+                d3.select(this).attr("stroke", "white").attr("stroke-width", 1);
             }
 
             console.log("Number of selected counties:", countSelectedCounties()); // Output the count

@@ -130,7 +130,7 @@ dataYearSelector.addEventListener('change', (event) => {
     const selectedYear = event.target.value;
 
     const filePath = selectedYear === '2024' 
-        ? 'data/2024county_votes.csv'
+        ? 'data/2024county_votes.csv' 
         : selectedYear === '2016' 
         ? 'data/2016county_votes.csv' 
         : 'data/usacounty_votes.csv';
