@@ -13,8 +13,9 @@ export function createInfoPane() {
         .style("display", "none");
 }
 
-export function updateInfoPane(infoPane, counties, stateTotalPopulation, countyType, aggregatedVotes = null, totalVotes = null) {
-    let republicanVotes, democratVotes, otherVotes, percentageRepublican, percentageDemocrat, percentageOther;
+// Function to update the info pane with aggregated data
+export function updateInfoPane(infoPane, data) {
+    const { counties, aggregatedVotes, totalVotes, stateTotalPopulation, countyType } = data;
 
     // Ensure counties is always an array
     const countiesArray = Array.isArray(counties) ? counties : [counties];
@@ -26,25 +27,15 @@ export function updateInfoPane(infoPane, counties, stateTotalPopulation, countyT
     // Calculate turnout based on the total population and total votes
     const turnout = totalPopulation > 0 ? ((totalVotesAcrossCounties / totalPopulation) * 100).toFixed(1) : "0.0";
 
-    if (aggregatedVotes && totalVotes) {
-        republicanVotes = aggregatedVotes.Republican;
-        democratVotes = aggregatedVotes.Democrat;
-        otherVotes = aggregatedVotes.OtherVotes;
+    // Calculate votes and percentages
+    const republicanVotes = aggregatedVotes?.Republican || countiesArray.reduce((sum, county) => sum + (county.Republican || 0), 0);
+    const democratVotes = aggregatedVotes?.Democrat || countiesArray.reduce((sum, county) => sum + (county.Democrat || 0), 0);
+    const otherVotes = aggregatedVotes?.OtherVotes || countiesArray.reduce((sum, county) => sum + (county.OtherVotes || 0), 0);
 
-        percentageRepublican = ((republicanVotes / totalVotes) * 100).toFixed(1) || 0;
-        percentageDemocrat = ((democratVotes / totalVotes) * 100).toFixed(1) || 0;
-        percentageOther = ((otherVotes / totalVotes) * 100).toFixed(1) || 0;
-    } else {
-        // Calculate votes and percentages based on the selected counties
-        republicanVotes = countiesArray.reduce((sum, county) => sum + (county.Republican || 0), 0);
-        democratVotes = countiesArray.reduce((sum, county) => sum + (county.Democrat || 0), 0);
-        otherVotes = countiesArray.reduce((sum, county) => sum + (county.OtherVotes || 0), 0);
-
-        const totalVotes = republicanVotes + democratVotes + otherVotes;
-        percentageRepublican = totalVotes > 0 ? ((republicanVotes / totalVotes) * 100).toFixed(1) : "0.0";
-        percentageDemocrat = totalVotes > 0 ? ((democratVotes / totalVotes) * 100).toFixed(1) : "0.0";
-        percentageOther = totalVotes > 0 ? ((otherVotes / totalVotes) * 100).toFixed(1) : "0.0";
-    }
+    const totalVotesCalc = republicanVotes + democratVotes + otherVotes;
+    const percentageRepublican = totalVotesCalc > 0 ? ((republicanVotes / totalVotesCalc) * 100).toFixed(1) : "0.0";
+    const percentageDemocrat = totalVotesCalc > 0 ? ((democratVotes / totalVotesCalc) * 100).toFixed(1) : "0.0";
+    const percentageOther = totalVotesCalc > 0 ? ((otherVotes / totalVotesCalc) * 100).toFixed(1) : "0.0";
 
     // Update the info pane with the aggregated data
     infoPane.html(`
@@ -209,4 +200,3 @@ export function createResetAllButton() {
         .text("Reset All Counties")
         .style("margin-top", "10px");
 }
-

@@ -7,6 +7,7 @@ let selectedCounties = []; // Track selected counties
 
 export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders, buttons, svg, infoPane) {
     const dropdown = document.getElementById('data-year-selector'); // Get the dropdown element
+
     interactionLayer.selectAll("path")
         .on("mouseover", function (event, d) {
             if (dropdown && dropdown.classList.contains("open")) {
@@ -41,6 +42,7 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
             if (selectedCounties.length > 0) {
                 updatePane.style("display", "block");
 
+                // Aggregate votes for selected counties
                 const aggregatedVotes = selectedCounties.reduce((totals, county) => {
                     totals.Republican += county.Republican;
                     totals.Democrat += county.Democrat;
@@ -51,13 +53,19 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
                 const totalVotes = aggregatedVotes.Republican + aggregatedVotes.Democrat + aggregatedVotes.OtherVotes;
                 const firstCounty = selectedCounties[0];
 
-                // Update Info Pane with aggregated votes and metadata of the first county
+                // Calculate the total population of all counties in the same state as the first county
+                const stateTotalPopulation = countyDataArray
+                    .filter(county => county.State === firstCounty.State)
+                    .reduce((sum, county) => sum + county.Population, 0);
+
+                // Update Info Pane with aggregated votes and metadata
                 updateInfoPane(infoPane, {
-                    ...firstCounty,
-                    Republican: aggregatedVotes.Republican,
-                    Democrat: aggregatedVotes.Democrat,
-                    OtherVotes: aggregatedVotes.OtherVotes,
-                }, firstCounty.Population, firstCounty.vote_total > 50000 ? "Urban" : "Rural");
+                    counties: selectedCounties,
+                    aggregatedVotes,
+                    totalVotes,
+                    stateTotalPopulation,
+                    countyType: firstCounty.vote_total > 50000 ? "Urban" : "Rural",
+                });
 
                 // Delegate slider handling to sliderHandler.js
                 setupSliders(sliders, buttons, selectedCounties, updatePane, infoPane, svg, aggregatedVotes, totalVotes);
@@ -70,4 +78,3 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
 export function countSelectedCounties() {
     return selectedCounties.length;
 }
-

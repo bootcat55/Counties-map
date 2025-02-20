@@ -7,6 +7,7 @@ export function setupSliders(sliders, buttons, selectedCounties, updatePane, inf
     const { repSlider, demSlider, otherSlider } = sliders;
     const { submitButton, resetButton } = buttons;
 
+    // Function to update slider percentages
     const updateSliderPercentages = () => {
         const totalVotes = selectedCounties.reduce((totals, county) => {
             totals.Republican += county.Republican;
@@ -29,6 +30,7 @@ export function setupSliders(sliders, buttons, selectedCounties, updatePane, inf
         otherSlider.property("value", Math.round(otherPercentage));
     };
 
+    // Function to update the info pane with total votes
     const updateInfoPaneWithTotalVotes = () => {
         if (selectedCounties.length === 0) {
             infoPane.style("display", "none");
@@ -37,6 +39,12 @@ export function setupSliders(sliders, buttons, selectedCounties, updatePane, inf
 
         const firstCounty = selectedCounties[0];
 
+        // Calculate the total population of all counties in the same state as the first county
+        const stateTotalPopulation = countyDataArray
+            .filter(county => county.State === firstCounty.State)
+            .reduce((sum, county) => sum + county.Population, 0);
+
+        // Aggregate votes for selected counties
         const totalVotes = selectedCounties.reduce((totals, county) => {
             totals.Republican += county.Republican;
             totals.Democrat += county.Democrat;
@@ -44,22 +52,20 @@ export function setupSliders(sliders, buttons, selectedCounties, updatePane, inf
             return totals;
         }, { Republican: 0, Democrat: 0, OtherVotes: 0 });
 
-        const totalStatePopulation = countyDataArray
-            .filter(county => county.State === firstCounty.State)
-            .reduce((sum, county) => sum + county.Population, 0);
-
+        // Update the info pane with aggregated data
         updateInfoPane(infoPane, {
-            County: firstCounty.County,
-            State: firstCounty.State,
-            Republican: totalVotes.Republican,
-            Democrat: totalVotes.Democrat,
-            OtherVotes: totalVotes.OtherVotes,
-            Population: firstCounty.Population,
-        }, totalStatePopulation, "");
+            counties: selectedCounties,
+            aggregatedVotes: totalVotes,
+            totalVotes: totalVotes.Republican + totalVotes.Democrat + totalVotes.OtherVotes,
+            stateTotalPopulation,
+            countyType: firstCounty.vote_total > 50000 ? "Urban" : "Rural",
+        });
     };
 
-    let previousSliderValues = { rep: 50, dem: 50, other: 0 }; // Initial percentages
+    // Track previous slider values
+    let previousSliderValues = { rep: 50, dem: 50, other: 0 };
 
+    // Function to handle slider input
     const handleSliderInput = () => {
         let repPercentage = +repSlider.property("value");
         let demPercentage = +demSlider.property("value");
@@ -128,14 +134,17 @@ export function setupSliders(sliders, buttons, selectedCounties, updatePane, inf
         updateSliderPercentages();
     };
 
+    // Initialize sliders
     repSlider.attr("max", 100).attr("step", 1).property("value", 50).style("cursor", "pointer");
     demSlider.attr("max", 100).attr("step", 1).property("value", 50).style("cursor", "pointer");
     otherSlider.attr("max", 100).attr("step", 1).property("value", 0).style("cursor", "pointer");
 
+    // Add event listeners to sliders
     repSlider.on("input", () => handleSliderInput());
     demSlider.on("input", () => handleSliderInput());
     otherSlider.on("input", () => handleSliderInput());
 
+    // Add event listeners to buttons
     submitButton.on("click", (e) => {
         e.preventDefault();
         updatePane.style("display", "none");
@@ -153,6 +162,7 @@ export function setupSliders(sliders, buttons, selectedCounties, updatePane, inf
         recalculateAndDisplayPopularVote(countyDataArray);
     });
 
+    // Update the UI initially
     updateSliderPercentages();
     updateInfoPaneWithTotalVotes();
 }
