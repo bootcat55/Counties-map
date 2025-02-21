@@ -22,8 +22,8 @@ const createVoteDisplay = () => {
         .style("justify-content", "flex-start") // Align items to the left
         .style("align-items", "center") // Vertically center items
         .style("margin-top", "-50px")
-        .style("width", "100%")
-        .style("transform", `translateX(${LABEL_OFFSET}px)`); // Shift all labels 150px to the right
+        .style("width", `calc(100% - ${LABEL_OFFSET}px)`) // Adjust width to account for the offset
+        .style("padding-left", `${LABEL_OFFSET}px`); // Use padding instead of transform to shift content
 };
 
 // Helper function to append vote information to the container
