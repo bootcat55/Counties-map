@@ -1,8 +1,8 @@
 import * as d3 from 'd3';
 
 // Constants
-const SPACING = 100; // 50px spacing between Democrat and Republican, and Republican and Other
-const LABEL_OFFSET = 400; // 150px offset to shift all labels to the right
+const SPACING = 150; // 50px spacing between Democrat and Republican, and Republican and Other
+const LABEL_OFFSET = 350; // 150px offset to shift all labels to the right
 const PERCENTAGE_FACTOR = 100;
 
 // Calculate total Democrat, Republican, and Other votes across all counties
