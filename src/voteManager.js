@@ -29,9 +29,18 @@ export function updateVoteTotals(county, newRepublicanVotes, newDemocratVotes, n
     const totalVotes = county.vote_total; // Fixed total vote pool
     const fixedOtherVotes = county.OtherVotes; // Preserve "Other Votes"
 
-    // Adjust Republican and Democrat votes while respecting the fixed total
+    // Ensure Republican and Democrat votes are symmetrical and respect the fixed total
     let adjustedRepVotes = Math.max(0, Math.min(totalVotes - fixedOtherVotes, newRepublicanVotes || 0));
-    let adjustedDemVotes = Math.max(0, totalVotes - fixedOtherVotes - adjustedRepVotes);
+    let adjustedDemVotes = Math.max(0, Math.min(totalVotes - fixedOtherVotes, newDemocratVotes || 0));
+
+    // Ensure the sum of Republican and Democrat votes does not exceed the available votes
+    const availableVotes = totalVotes - fixedOtherVotes;
+    if (adjustedRepVotes + adjustedDemVotes > availableVotes) {
+        // Scale down proportionally to fit within the available votes
+        const scaleFactor = availableVotes / (adjustedRepVotes + adjustedDemVotes);
+        adjustedRepVotes = Math.floor(adjustedRepVotes * scaleFactor);
+        adjustedDemVotes = Math.floor(adjustedDemVotes * scaleFactor);
+    }
 
     // Update the county data
     county.Republican = adjustedRepVotes;
