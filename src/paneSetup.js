@@ -57,7 +57,7 @@ export function updateInfoPane(infoPane, data) {
                     <td>${stateTotalPopulation.toLocaleString()}</td>
                 </tr>
                 <tr>
-                    <td>Vote Turnout</td>
+                    <td>Vote Turnout<sub>0</sub></td>
                     <td>${turnout}%</td>
                 </tr>
                 <tr>
