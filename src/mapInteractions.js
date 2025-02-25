@@ -1,6 +1,7 @@
 import './styles.css';
 import * as d3 from 'd3';
 import { json } from 'd3-fetch';
+import { feature } from 'topojson-client'; // Correct import
 import { countyDataArray, resetCountyVotes, updateCountyColor, initializeCountyDataArray, updateStateVotes } from './voteManager.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
 import { createInfoPane, createUpdatePane, createTooltip, createResetAllButton } from './paneSetup.js';
@@ -78,6 +79,7 @@ export function initializeMapInteractions() {
 
     createZoomControls(svg, MAP_WIDTH, MAP_HEIGHT);
 
+    // Load county data
     json('data/geojson-counties-fips.json').then(geoData => {
         const filteredGeoData = {
             type: "FeatureCollection",
@@ -103,11 +105,28 @@ export function initializeMapInteractions() {
         const projection = d3.geoAlbersUsa().fitSize([MAP_WIDTH, MAP_HEIGHT], filteredGeoData);
         const pathGenerator = d3.geoPath().projection(projection);
 
-        // Render map paths
+        // Render county map paths
         renderMap(svg, filteredGeoData, pathGenerator);
 
         // Set up interactions
         setupInteractions(svg, filteredGeoData, tooltip, updatePane, sliders, buttons, infoPaneElement, projection);
+
+        // Load and render state borders
+        json('data/states-10m.json').then(stateData => {
+            const states = feature(stateData, stateData.objects.states); // Use the `feature` function
+
+            svg.append("g")
+                .attr("class", "state-borders")
+                .selectAll("path")
+                .data(states.features)
+                .enter()
+                .append("path")
+                .attr("d", pathGenerator)
+                .attr("fill", "none") // No fill for state borders
+                .attr("stroke", "#000") // Black stroke for state borders
+                .attr("stroke-width", 1.5) // Thicker stroke for visibility
+                .attr("pointer-events", "none"); // Ensure no interaction interference
+        });
 
         // Reset all counties on button click
         resetAllButton.on("click", function (e) {
