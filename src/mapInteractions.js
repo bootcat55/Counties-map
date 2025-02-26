@@ -10,7 +10,6 @@ import { setupMouseEvents } from './mouseEvents.js';
 import { readCsvFile } from './index.js';
 import { createStateMap, updateStateColors } from './statemap.js'; // Import updateStateColors
 
-// Constants
 const BEDFORD_CITY_FIPS = 51515;
 const BEDFORD_COUNTY_FIPS = 51019;
 const MAP_WIDTH = 1200;
