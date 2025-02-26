@@ -7,8 +7,11 @@ let voteData = [];
 let isDefaultVotes = true;  // Track which set of electoral votes is displayed
 
 // Function to create the US states map
-export function createStateMap() {
-    d3.csv('data/usacounty_votes.csv').then(voteDataLoaded => {
+export function createStateMap(filePath = 'data/usacounty_votes.csv') {
+    // Clear the existing state map
+    d3.select("#state-map").html("");
+
+    d3.csv(filePath).then(voteDataLoaded => {
         voteData = voteDataLoaded.map(d => ({
             ...d,
             FIPS: +d.FIPS,
@@ -142,7 +145,7 @@ export function createStateMap() {
 }
 
 // Function to update state colors based on vote totals
-function updateStateColors(svg) {
+export function updateStateColors(svg) {
     svg.selectAll("path").style("fill", function () {
         const stateId = this.getAttribute("id");
         const votes = voteMap.get(stateId);
@@ -275,5 +278,5 @@ window.addEventListener('countyVoteUpdated', function(e) {
     updateStateColor(state);
 });
 
-// Initialize the state map
+// Initialize the state map with the default dataset
 createStateMap();

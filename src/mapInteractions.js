@@ -1,14 +1,14 @@
 import './styles.css';
 import * as d3 from 'd3';
 import { json } from 'd3-fetch';
-import { feature } from 'topojson-client'; // Correct import
+import { feature } from 'topojson-client';
 import { countyDataArray, resetCountyVotes, updateCountyColor, initializeCountyDataArray, updateStateVotes } from './voteManager.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
 import { createInfoPane, createUpdatePane, createTooltip, createResetAllButton } from './paneSetup.js';
 import { createZoomControls } from './zoom.js';
 import { setupMouseEvents } from './mouseEvents.js';
 import { readCsvFile } from './index.js';
-import { createStateMap } from './statemap.js';
+import { createStateMap, updateStateColors } from './statemap.js'; // Import updateStateColors
 
 // Constants
 const BEDFORD_CITY_FIPS = 51515;
@@ -113,7 +113,7 @@ export function initializeMapInteractions() {
 
         // Load and render state borders
         json('data/states-10m.json').then(stateData => {
-            const states = feature(stateData, stateData.objects.states); // Use the `feature` function
+            const states = feature(stateData, stateData.objects.states);
 
             svg.append("g")
                 .attr("class", "state-borders")
@@ -163,5 +163,8 @@ dataYearSelector.addEventListener('change', (event) => {
 
         // Refresh map interactions
         initializeMapInteractions();
+
+        // Reinitialize the state map with the new dataset
+        createStateMap(filePath);
     });
 });
