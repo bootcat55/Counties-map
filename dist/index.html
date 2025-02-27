@@ -2,15 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>USA Interactive Counties Map</title>
     <link rel="stylesheet" href="/src/styles.css">
 </head>
 <body>
     <!-- Navigation Menu -->
     <nav class="navbar">
-        <div class="menu-icon" onclick="toggleMenu()">☰</div>
-        <ul class="nav-menu" id="nav-menu">
+        <ul class="nav-menu">
             <li><a href="#home">Home</a></li>
             <li><a href="https://270cal.blogspot.com/" target="_blank">Blog</a></li>
             <li><a href="#resources">Resources</a></li>
@@ -25,7 +24,7 @@
     <!-- Popular Vote Container -->
     <div id="popular-vote-container"></div>
 
-    <!-- Text Box -->
+    <!-- Text Box Popup -->
     <div id="text-box">
         GNU General Public License 3.0<br>
         &copy; Copyright Sept 2024<br>
@@ -39,6 +38,9 @@
         - Toggle for blank map and blank counties<br>
         ** Alaska will never be done because its all based on estimated data<br>
     </div>
+
+    <!-- Text Box Toggle Button -->
+    <div id="text-box-toggle" onclick="toggleTextbox()">☰ Info</div>
 
     <!-- Container for maps, stacked vertically -->
     <div id="map-container">
@@ -72,10 +74,10 @@
     <div id="tooltip-container"></div>
 
     <script>
-        // JavaScript to toggle the mobile menu
-        function toggleMenu() {
-            const navMenu = document.getElementById("nav-menu");
-            navMenu.classList.toggle("active");
+        // JavaScript to toggle the text box popup
+        function toggleTextbox() {
+            const textBox = document.getElementById("text-box");
+            textBox.classList.toggle("active");
         }
     </script>
     <script src="bundle.js"></script>
