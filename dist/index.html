@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>USA Interactive Counties Map</title>
     <link rel="stylesheet" href="/src/styles.css">
 </head>
@@ -21,6 +21,8 @@
     <div id="election-results-chart"></div>
     
     <div id="popular-vote-container"></div>
+
+    <!-- Text Box Popup -->
     <div id="text-box">
         GNU General Public License 3.0<br>
         &copy; Copyright Sept 2024<br>
@@ -35,6 +37,9 @@
         ** Alaska will never be done because its all based on estimated data<br>
     </div>
     
+
+    <!-- Text Box Toggle Button -->
+    <div id="text-box-toggle" onclick="toggleTextbox()">☰ Info</div>
 
     <!-- Container for maps, stacked vertically -->
     <div id="map-container">
