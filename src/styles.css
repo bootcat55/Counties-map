@@ -129,10 +129,75 @@ body {
 
 /* Stacked bar chart styling */
 #election-results-chart {
-    width: 600px;
+    width: 100%; /* Full width by default */
     text-align: center;
-    margin: 0 auto 10px auto;
-    transform: translateX(-350px);
+    margin: 0 auto 10px auto; /* Center the chart */
+    overflow: visible; /* Ensure the chart doesn't get cut off */
+}
+
+/* Desktop-specific styles */
+@media (min-width: 769px) {
+    #election-results-chart {
+        width: 600px; /* Fixed width for desktop */
+        transform: translateX(-350px); /* Offset for desktop */
+    }
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+    #election-results-chart {
+        width: 100%; /* Full width for mobile */
+        transform: none; /* Remove offset for mobile */
+    }
+
+    #map-container {
+        align-items: center; /* Center-align maps on mobile */
+    }
+
+    #state-map, #county-map {
+        width: 100%; /* Full width for mobile */
+        height: auto; /* Allow maps to scale */
+    }
+
+    #county-map {
+        margin-top: 20px; /* Add space between maps on mobile */
+    }
+
+    #text-box {
+        position: static;
+        max-width: 100%;
+        margin: 10px;
+    }
+
+    .navbar {
+        padding: 5px 0;
+    }
+
+    .nav-menu {
+        display: none;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .nav-menu.active {
+        display: flex;
+    }
+
+    .menu-icon {
+        display: block;
+        font-size: 24px;
+        cursor: pointer;
+    }
+
+    .info-pane, .update-pane {
+        width: 90%;
+        margin: 10px auto;
+    }
+
+    .tooltip {
+        font-size: 12px;
+        padding: 5px;
+    }
 }
 
 /* Styling for bar chart text labels */
@@ -243,60 +308,4 @@ body {
 .nav-menu a:hover {
     background-color: #444444;
     border-radius: 5px;
-}
-
-/* Mobile styles */
-@media (max-width: 768px) {
-    body {
-        font-size: 14px;
-    }
-
-    #map-container {
-        align-items: center; /* Center-align maps on mobile */
-    }
-
-    #state-map, #county-map {
-        width: 100%; /* Full width for mobile */
-        height: auto; /* Allow maps to scale */
-    }
-
-    #county-map {
-        margin-top: 20px; /* Add space between maps on mobile */
-    }
-
-    #text-box {
-        position: static;
-        max-width: 100%;
-        margin: 10px;
-    }
-
-    .navbar {
-        padding: 5px 0;
-    }
-
-    .nav-menu {
-        display: none;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .nav-menu.active {
-        display: flex;
-    }
-
-    .menu-icon {
-        display: block;
-        font-size: 24px;
-        cursor: pointer;
-    }
-
-    .info-pane, .update-pane {
-        width: 90%;
-        margin: 10px auto;
-    }
-
-    .tooltip {
-        font-size: 12px;
-        padding: 5px;
-    }
 }
