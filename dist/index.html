@@ -9,7 +9,8 @@
 <body>
     <!-- Navigation Menu -->
     <nav class="navbar">
-        <ul class="nav-menu">
+        <div class="menu-icon" onclick="toggleMenu()">☰</div>
+        <ul class="nav-menu" id="nav-menu">
             <li><a href="#home">Home</a></li>
             <li><a href="https://270cal.blogspot.com/" target="_blank">Blog</a></li>
             <li><a href="#resources">Resources</a></li>
@@ -17,10 +18,14 @@
             <li><a href="#socials">Socials</a></li>
         </ul>
     </nav>
+
     <!-- Stacked Bar Chart, centered at the top -->
     <div id="election-results-chart"></div>
-    
+
+    <!-- Popular Vote Container -->
     <div id="popular-vote-container"></div>
+
+    <!-- Text Box -->
     <div id="text-box">
         GNU General Public License 3.0<br>
         &copy; Copyright Sept 2024<br>
@@ -34,7 +39,6 @@
         - Toggle for blank map and blank counties<br>
         ** Alaska will never be done because its all based on estimated data<br>
     </div>
-    
 
     <!-- Container for maps, stacked vertically -->
     <div id="map-container">
@@ -43,21 +47,21 @@
         <div id="county-map"></div>
     </div>
 
+    <!-- Reset All Button -->
     <div id="reset-all-container"></div>
 
-    <div id="switch-data-container" style="margin: 20px; position: relative; left: -20px;">
+    <!-- Data Year Selector -->
+    <div id="switch-data-container">
         <select id="data-year-selector">
             <option value="2016">2016 Data</option>
             <option value="2020">2020 Data</option>
             <option value="2024">2024 Data</option>
         </select>
-    </div> 
+    </div>
 
-    <!--<div id="swingometer-container" style="width: 400px; margin: 0 auto;"></div> -->
-    
     <!-- Tooltip for state map interactions -->
     <div id="state-tooltip" class="tooltip"></div>
-    
+
     <!-- Container for the info pane -->
     <div id="info-container"></div>
 
@@ -67,7 +71,13 @@
     <!-- Container for the tooltip -->
     <div id="tooltip-container"></div>
 
+    <script>
+        // JavaScript to toggle the mobile menu
+        function toggleMenu() {
+            const navMenu = document.getElementById("nav-menu");
+            navMenu.classList.toggle("active");
+        }
+    </script>
     <script src="bundle.js"></script>
 </body>
 </html>
-
