@@ -1,5 +1,4 @@
 const path = require('path');
-const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 module.exports = {
     entry: './src/index.js', // Entry point for the new index.js file
@@ -28,11 +27,6 @@ module.exports = {
             },
         ],
     },
-    plugins: [
-        new CleanWebpackPlugin({
-            cleanOnceBeforeBuildPatterns: ['**/*', '!data/**', '!index.html'], // Preserve data folder and index.html
-        }),
-    ],
     devServer: {
         static: {
             directory: path.join(__dirname, 'dist'),
