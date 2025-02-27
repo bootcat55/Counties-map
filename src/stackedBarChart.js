@@ -6,22 +6,18 @@ let use2024Votes = false;  // Track whether to use 2024 electoral votes
 
 // Function to draw the stacked bar chart with a 270 electoral vote marker
 export function drawStackedBarChart(results) {
-    const container = d3.select("#election-results-chart");
-    const containerWidth = container.node().getBoundingClientRect().width; // Get container width
+    const svgWidth = 600;
     const svgHeight = 100;
-
-    // Clear any previous chart
-    container.html("");
-
-    const svg = container.append("svg")
-        .attr("width", containerWidth) // Use container width
+    const svg = d3.select("#election-results-chart").html("") // Clear any previous chart
+        .append("svg")
+        .attr("width", svgWidth)
         .attr("height", svgHeight);
 
     const totalVotes = results.republicanVotes + results.democratVotes + results.tooCloseToCallVotes;
 
     const xScale = d3.scaleLinear()
         .domain([0, totalVotes])
-        .range([0, containerWidth]); // Scale based on container width
+        .range([0, svgWidth]);
 
     // Draw Democrat bar (blue)
     svg.append("rect")
@@ -143,3 +139,4 @@ window.addEventListener('electoralVoteToggle', () => {
     use2024Votes = !use2024Votes;
     updateChart();  // Redraw the chart with updated electoral votes
 });
+
