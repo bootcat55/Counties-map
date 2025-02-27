@@ -112,7 +112,6 @@
     width: 100%; /* Full width by default */
     text-align: center;
     margin: 0 auto 10px auto; /* Center the chart */
-<<<<<<< HEAD
     overflow: visible; /* Ensure the chart doesn't get cut off */
 }
 
@@ -224,9 +223,7 @@
         font-size: 12px;
         padding: 5px;
     }
-=======
-    transform: translateX(-350px); /* Move 200px to the left */
->>>>>>> parent of f4462fb (mobile)
+    transform: {translateX(-350px); /* Move 200px to the left */
 }
 
 /* Styling for bar chart text labels */
@@ -308,10 +305,7 @@ body {
     background-color: #e0e0e0;
 }
 
-<<<<<<< HEAD
 /* Text box popup styling */
-=======
->>>>>>> parent of f4462fb (mobile)
 #text-box {
     position: fixed;
     top: 0;
@@ -336,7 +330,6 @@ body {
     position: fixed;
     top: 60px;
     right: 10px;
-<<<<<<< HEAD
     background-color: #2e2e2e;
     color: orange;
     padding: 10px;
@@ -344,7 +337,6 @@ body {
     z-index: 1002; /* Ensure it's above the text box */
     border-radius: 4px; /* Rounded corners */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Shadow for depth */
-=======
     padding: 10px;
     color: orange;
     font-size: 16px;
@@ -391,5 +383,4 @@ body {
 
 #data-year-selector.open + .tooltip {
     display: none !important;
->>>>>>> parent of f4462fb (mobile)
 }
