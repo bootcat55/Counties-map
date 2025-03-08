@@ -3,14 +3,7 @@ import * as d3 from 'd3';
 // Function to create the info pane
 export function createInfoPane() {
     return d3.select("#info-container")
-        .attr("class", "info-pane")
-        .style("position", "absolute")
-        .style("top", "700px")
-        .style("right", "20px")
-        .style("padding", "10px")
-        .style("border", "1px solid #ccc")
-        .style("background-color", "#f9f9f9")
-        .style("display", "none");
+        .attr("class", "info-pane");
 }
 
 // Function to update the info pane with aggregated data
@@ -65,11 +58,11 @@ export function updateInfoPane(infoPane, data) {
                     <td>${countyType}</td>
                 </tr>
                 <tr>
-                    <td><span style="color: red;">Republican Votes</span></td>
+                    <td><span class="winner-republican">Republican Votes</span></td>
                     <td>${republicanVotes.toLocaleString()} (${percentageRepublican}%)</td>
                 </tr>
                 <tr>
-                    <td><span style="color: blue;">Democrat Votes</span></td>
+                    <td><span class="winner-democrat">Democrat Votes</span></td>
                     <td>${democratVotes.toLocaleString()} (${percentageDemocrat}%)</td>
                 </tr>
                 <tr>
@@ -84,18 +77,9 @@ export function updateInfoPane(infoPane, data) {
 // Function to create the update pane with sliders
 export function createUpdatePane() {
     const updatePane = d3.select("#update-container")
-        .attr("class", "update-pane")
-        .style("position", "absolute")
-        .style("bottom", "-600px")
-        .style("right", "20px")
-        .style("padding", "10px")
-        .style("border", "1px solid #ccc")
-        .style("background-color", "#f0f0f0")
-        .style("display", "none");
+        .attr("class", "update-pane");
 
-    const updateForm = updatePane.append("form")
-        .style("display", "flex")
-        .style("flex-direction", "column");
+    const updateForm = updatePane.append("form");
 
     updateForm.append("div").attr("id", "voting-info").style("margin-bottom", "10px");
 
@@ -107,9 +91,7 @@ export function createUpdatePane() {
             .attr("min", 0)
             .attr("max", 100)
             .attr("value", 33)
-            .attr("id", id)
-            .style("width", "100%")
-            .style("margin", "5px 0");
+            .attr("id", id);
     };
 
     const repSlider = createSlider("Republican:", "repSlider", "repPercentage", "red");
@@ -117,7 +99,7 @@ export function createUpdatePane() {
     const otherSlider = createSlider("Other:", "otherSlider", "otherPercentage", "purple");
 
     const submitButton = updateForm.append("button").text("Update Votes");
-    const resetButton = updateForm.append("button").text("Reset County").style("margin-top", "10px");
+    const resetButton = updateForm.append("button").text("Reset County").attr("class", "reset-button");
 
     return { updatePane, repSlider, demSlider, otherSlider, submitButton, resetButton };
 }
@@ -126,17 +108,7 @@ export function createUpdatePane() {
 export function createTooltip() {
     return d3.select("body")
         .append("div")
-        .attr("class", "tooltip")
-        .style("position", "absolute")
-        .style("padding", "10px")
-        .style("border", "1px solid #ccc")
-        .style("border-radius", "4px")
-        .style("box-shadow", "0 2px 4px rgba(0, 0, 0, 0.1)")
-        .style("font-family", "Arial, sans-serif")
-        .style("font-size", "14px")
-        .style("color", "#333")
-        .style("pointer-events", "none")
-        .style("display", "none");
+        .attr("class", "tooltip");
 }
 
 // Function to update the tooltip with state vote data
@@ -158,12 +130,12 @@ export function updateTooltip(tooltip, d, event) {
             </thead>
             <tbody>
                 <tr>
-                    <td><span style="color: red;">Republican</span></td>
+                    <td><span class="winner-republican">Republican</span></td>
                     <td>${d.properties.Republican.toLocaleString()}</td>
                     <td>${percentageRepublican}%</td>
                 </tr>
                 <tr>
-                    <td><span style="color: blue;">Democrat</span></td>
+                    <td><span class="winner-democrat">Democrat</span></td>
                     <td>${d.properties.Democrat.toLocaleString()}</td>
                     <td>${percentageDemocrat}%</td>
                 </tr>
@@ -197,6 +169,5 @@ export function createResetAllButton() {
     return d3.select("#reset-all-container")
         .append("button")
         .attr("id", "reset-all")
-        .text("Reset All Counties")
-        .style("margin-top", "10px");
+        .text("Reset All Counties");
 }

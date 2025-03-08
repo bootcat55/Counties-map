@@ -54,6 +54,10 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     background: linear-gradient(to bottom, #ff9999, #99ccff);
     padding: 10px;
+    position: absolute;
+    top: 750px;
+    right: 20px;
+    display: none;
 }
 
 .info-pane-header {
@@ -86,6 +90,48 @@
 
 .info-pane tr:last-child td {
     border-bottom: none;
+}
+
+/* Update pane styling */
+.update-pane {
+    position: absolute;
+    bottom: -650px;
+    right: 20px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    background-color: #f0f0f0;
+    display: none;
+}
+
+.update-pane form {
+    display: flex;
+    flex-direction: column;
+}
+
+.update-pane label {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.update-pane input[type="range"] {
+    width: 100%;
+    margin: 5px 0;
+}
+
+.update-pane button {
+    display: inline-block;
+    margin-left: 5px;
+    vertical-align: middle;
+}
+
+/* Slider percentage styling */
+#repPercentage, #demPercentage, #otherPercentage {
+    font-weight: normal; /* Ensure numbers are not bold */
+}
+
+/* Slider label styling */
+.update-pane label span {
+    font-weight: bold; /* Keep labels bold */
 }
 
 /* Winning party styling */
@@ -168,12 +214,6 @@ body {
     color: #f0f0f0; /* Off-white color */
 }
 
-.update-pane button {
-    display: inline-block;
-    margin-left: 5px;
-    vertical-align: middle;
-}
-
 /* Zoom controls container */
 .zoom-controls {
     position: absolute;
@@ -190,6 +230,7 @@ body {
     background-color: #f5f5f5;
     cursor: pointer;
 }
+
 .zoom-button:hover {
     background-color: #e0e0e0;
 }
@@ -244,4 +285,9 @@ body {
 
 #data-year-selector.open + .tooltip {
     display: none !important;
+}
+
+/* Reset button styling */
+#reset-all {
+    margin-top: 10px;
 }
