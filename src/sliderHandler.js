@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import { updateVoteTotals, countyDataArray, resetCountyVotes, updateCountyColor, calculateCountyVotes } from './voteManager.js';
-import { updateInfoPane } from './paneSetup.js';
+import { updateInfoPane, updateBarChart } from './paneSetup.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
 
 export function setupSliders(sliders, buttons, selectedCounties, updatePane, infoPane, svg, aggregatedVotes, totalVotes) {
@@ -59,6 +59,13 @@ export function setupSliders(sliders, buttons, selectedCounties, updatePane, inf
             totalVotes: totalVotes.Republican + totalVotes.Democrat + totalVotes.OtherVotes,
             stateTotalPopulation,
             countyType: firstCounty.vote_total > 50000 ? "Urban" : "Rural",
+        });
+
+        // Update the bar chart with the new data
+        updateBarChart({
+            republicanVotes: totalVotes.Republican,
+            democratVotes: totalVotes.Democrat,
+            otherVotes: totalVotes.OtherVotes
         });
     };
 
@@ -160,6 +167,13 @@ export function setupSliders(sliders, buttons, selectedCounties, updatePane, inf
         selectedCounties.length = 0;
         updatePane.style("display", "none");
         recalculateAndDisplayPopularVote(countyDataArray);
+
+        // Update the bar chart
+        updateBarChart({
+            republicanVotes: 0,
+            democratVotes: 0,
+            otherVotes: 0
+        });
     });
 
     // Update the UI initially

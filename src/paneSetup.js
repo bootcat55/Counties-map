@@ -74,11 +74,22 @@ export function updateInfoPane(infoPane, data) {
     `).style("display", "block");
 }
 
-// Function to create the update pane with sliders
+// Function to create the update pane with sliders and bar chart
 export function createUpdatePane() {
     const updatePane = d3.select("#update-container")
         .attr("class", "update-pane");
 
+    // Create a container for the bar chart
+    const barChartContainer = updatePane.append("div")
+        .attr("class", "bar-chart-container");
+
+    // Create the bar chart SVG
+    barChartContainer.append("svg")
+        .attr("id", "bar-chart")
+        .attr("width", 200)
+        .attr("height", 150);
+
+    // Create the form for sliders
     const updateForm = updatePane.append("form");
 
     updateForm.append("div").attr("id", "voting-info").style("margin-bottom", "10px");
@@ -102,6 +113,86 @@ export function createUpdatePane() {
     const resetButton = updateForm.append("button").text("Reset County").attr("class", "reset-button");
 
     return { updatePane, repSlider, demSlider, otherSlider, submitButton, resetButton };
+}
+
+// Function to update the bar chart
+export function updateBarChart(data, containerId = "#bar-chart") {
+    const { republicanVotes, democratVotes, otherVotes } = data;
+
+    // Clear any existing chart
+    d3.select(containerId).selectAll("*").remove();
+
+    // Set up dimensions
+    const margin = { top: 20, right: 10, bottom: 30, left: 10 }; // Reduced left margin
+    const width = 200 - margin.left - margin.right;
+    const height = 150 - margin.top - margin.bottom;
+
+    // Create SVG element
+    const svg = d3.select(containerId)
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    // Calculate percentages
+    const totalVotes = republicanVotes + democratVotes + otherVotes;
+    const repPercentage = totalVotes > 0 ? (republicanVotes / totalVotes) * 100 : 0;
+    const demPercentage = totalVotes > 0 ? (democratVotes / totalVotes) * 100 : 0;
+    const otherPercentage = totalVotes > 0 ? (otherVotes / totalVotes) * 100 : 0;
+
+    // Define scales
+    const x = d3.scaleBand()
+        .domain(["Republican", "Democrat", "Other"])
+        .range([0, width])
+        .padding(0.1);
+
+    const y = d3.scaleLinear()
+        .domain([0, 100]) // Fixed y-axis domain (0% to 100%)
+        .range([height, 0]);
+
+    // Add bars
+    svg.selectAll(".bar")
+        .data([
+            { party: "Republican", percentage: repPercentage },
+            { party: "Democrat", percentage: demPercentage },
+            { party: "Other", percentage: otherPercentage }
+        ])
+        .enter()
+        .append("rect")
+        .attr("class", "bar")
+        .attr("x", d => x(d.party))
+        .attr("y", d => y(d.percentage))
+        .attr("width", x.bandwidth())
+        .attr("height", d => height - y(d.percentage))
+        .attr("fill", d => {
+            if (d.party === "Republican") return "red";
+            if (d.party === "Democrat") return "blue";
+            return "gray";
+        });
+
+    // Add x-axis
+    svg.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x));
+
+    // Remove y-axis labels
+    svg.append("g")
+        .call(d3.axisLeft(y).tickFormat("")); // No labels on the y-axis
+
+    // Add labels
+    svg.selectAll(".label")
+        .data([
+            { party: "Republican", percentage: repPercentage },
+            { party: "Democrat", percentage: demPercentage },
+            { party: "Other", percentage: otherPercentage }
+        ])
+        .enter()
+        .append("text")
+        .attr("class", "label")
+        .attr("x", d => x(d.party) + x.bandwidth() / 2)
+        .attr("y", d => y(d.percentage) - 5)
+        .attr("text-anchor", "middle")
+        .text(d => `${d.percentage.toFixed(1)}%`);
 }
 
 // Function to create the tooltip
