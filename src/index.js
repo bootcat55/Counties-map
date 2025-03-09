@@ -42,7 +42,7 @@ function readCsvFile(url, callback) {
 }
 
 // Centralized data initialization
-readCsvFile('data/usacounty_votes.csv', data => {
+readCsvFile('data/2024county_votes.csv', data => {
     const electoralResults = calculateElectoralVotes(data);
     drawStackedBarChart(electoralResults);
     initializeMapInteractions(); // Initialize interactions with global countyDataArray

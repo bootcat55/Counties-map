@@ -72,6 +72,13 @@ export function updateInfoPane(infoPane, data) {
             </tbody>
         </table>
     `).style("display", "block");
+
+    // Update the bar chart with the new data
+    updateBarChart({
+        republicanVotes,
+        democratVotes,
+        otherVotes
+    });
 }
 
 // Function to create the update pane with sliders and bar chart
@@ -134,7 +141,7 @@ export function updateBarChart(data, containerId = "#bar-chart") {
         .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Calculate percentages
+    // Calculate percentages for the y-axis
     const totalVotes = republicanVotes + democratVotes + otherVotes;
     const repPercentage = totalVotes > 0 ? (republicanVotes / totalVotes) * 100 : 0;
     const demPercentage = totalVotes > 0 ? (democratVotes / totalVotes) * 100 : 0;
@@ -153,9 +160,9 @@ export function updateBarChart(data, containerId = "#bar-chart") {
     // Add bars
     svg.selectAll(".bar")
         .data([
-            { party: "Republican", percentage: repPercentage },
-            { party: "Democrat", percentage: demPercentage },
-            { party: "Other", percentage: otherPercentage }
+            { party: "Republican", percentage: repPercentage, votes: republicanVotes },
+            { party: "Democrat", percentage: demPercentage, votes: democratVotes },
+            { party: "Other", percentage: otherPercentage, votes: otherVotes }
         ])
         .enter()
         .append("rect")
@@ -179,12 +186,12 @@ export function updateBarChart(data, containerId = "#bar-chart") {
     svg.append("g")
         .call(d3.axisLeft(y).tickFormat("")); // No labels on the y-axis
 
-    // Add labels
+    // Add labels (absolute vote numbers)
     svg.selectAll(".label")
         .data([
-            { party: "Republican", percentage: repPercentage },
-            { party: "Democrat", percentage: demPercentage },
-            { party: "Other", percentage: otherPercentage }
+            { party: "Republican", percentage: repPercentage, votes: republicanVotes },
+            { party: "Democrat", percentage: demPercentage, votes: democratVotes },
+            { party: "Other", percentage: otherPercentage, votes: otherVotes }
         ])
         .enter()
         .append("text")
@@ -192,7 +199,7 @@ export function updateBarChart(data, containerId = "#bar-chart") {
         .attr("x", d => x(d.party) + x.bandwidth() / 2)
         .attr("y", d => y(d.percentage) - 5)
         .attr("text-anchor", "middle")
-        .text(d => `${d.percentage.toFixed(1)}%`);
+        .text(d => d.votes.toLocaleString()); // Display absolute vote numbers
 }
 
 // Function to create the tooltip
