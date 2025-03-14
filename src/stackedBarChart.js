@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import { stateElectoralVotes, stateElectoralVotes2024 } from './electoralVotes.js';
-import { voteMap, stateColorToggle } from './stateData.js';
+import { voteMap, stateColorToggle } from './statemap.js';
 
 let use2024Votes = false;  // Track whether to use 2024 electoral votes
 

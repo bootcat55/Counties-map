@@ -1,16 +1,21 @@
 import * as d3 from 'd3';
 import { stateElectoralVotes, stateElectoralVotes2024 } from './electoralVotes.js';
-import { voteMap, stateColorToggle, stateLastUpdated } from './stateData.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
 
-let voteData = [];
-let isDefaultVotes = true;  // Track which set of electoral votes is displayed
+// Consolidated state data maps
+export let voteMap = new Map(); // Tracks state-level vote totals
+export let stateColorToggle = new Map(); // Tracks manual color overrides
+export let stateLastUpdated = new Map(); // Tracks the source of the last update
+
+let voteData = []; // Stores county-level vote data
+let isDefaultVotes = true; // Tracks which set of electoral votes is displayed (2020 or 2024)
 
 // Function to create the US states map
 export function createStateMap(filePath = 'data/usacounty_votes.csv') {
     // Clear the existing state map
     d3.select("#state-map").html("");
 
+    // Load county-level vote data
     d3.csv(filePath).then(voteDataLoaded => {
         voteData = voteDataLoaded.map(d => ({
             ...d,
@@ -18,6 +23,7 @@ export function createStateMap(filePath = 'data/usacounty_votes.csv') {
             OtherVotes: +d['Other Votes'] || 0
         }));
 
+        // Aggregate vote totals for each state
         const stateVotes = d3.rollups(
             voteData,
             v => ({
@@ -28,15 +34,18 @@ export function createStateMap(filePath = 'data/usacounty_votes.csv') {
             d => d.State
         );
 
+        // Update the voteMap with state-level vote totals
         voteMap.clear();
         for (const [state, totals] of stateVotes) {
             voteMap.set(state, totals);
         }
 
+        // Create a container for the SVG map
         const svgContainer = d3.select("#state-map")
             .append("div")
             .attr("class", "svg-container");
 
+        // Load the US states SVG file
         d3.xml('data/us-states6.svg').then(data => {
             const importedNode = document.importNode(data.documentElement, true);
             svgContainer.node().appendChild(importedNode);
@@ -164,7 +173,7 @@ export function updateStateColors(svg) {
 function updateElectoralVotesDisplay(svg) {
     const electoralVotesData = isDefaultVotes ? stateElectoralVotes : stateElectoralVotes2024;
 
-    svg.selectAll("text.electoral-vote").remove();  // Clear existing electoral vote labels
+    svg.selectAll("text.electoral-vote").remove(); // Clear existing electoral vote labels
 
     svg.selectAll("path").each(function() {
         const stateId = this.getAttribute("id");
