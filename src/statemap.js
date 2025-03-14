@@ -11,7 +11,7 @@ let voteData = []; // Stores county-level vote data
 let isDefaultVotes = true; // Tracks which set of electoral votes is displayed (2020 or 2024)
 
 // Function to create the US states map
-export function createStateMap(filePath = 'data/usacounty_votes.csv') {
+export function createStateMap(filePath = 'data/2024county_votes.csv') {
     // Clear the existing state map
     d3.select("#state-map").html("");
 
