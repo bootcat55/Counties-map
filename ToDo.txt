@@ -7,6 +7,8 @@ To Do list:
 -move Hawaii's and Alaska's electoral votes to the correct position
 -ME and NE EC votes by district instead of winner take all
 -toggle for blank map and blank counties
+-add search function
+-allow user to select all counties in a state.
 
 Far future:
 
