@@ -1,7 +1,8 @@
 import * as d3 from 'd3';
 import { stateElectoralVotes } from './electoralVotes.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
-import { updateStateColor, voteMap, stateColorToggle, stateLastUpdated } from './statemap.js';
+import { updateStateColor } from './statemap.js';
+import { voteMap, stateColorToggle, stateLastUpdated } from './statemap.js';
 
 export let countyDataArray = [];
 export let originalCountyDataArray = [];
@@ -93,6 +94,11 @@ export function resetCountyVotes(county) {
         updateStateColor(county.State);
         window.dispatchEvent(new Event('stateColorChangedByVotes'));
         recalculateAndDisplayPopularVote(countyDataArray);
+
+        // Deselect the county visually by removing the white border
+        const svg = d3.select("#county-map").select("svg");
+        const countyPath = svg.selectAll("path").filter(d => d.properties.FIPS === county.FIPS);
+        countyPath.attr("stroke", "none").attr("stroke-width", 0);
     }
 }
 

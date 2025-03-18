@@ -72,7 +72,74 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
             } else {
                 updatePane.style("display", "none");
             }
+        })
+        .on("dblclick", function (event, d) {
+            const stateAbbreviation = d.properties.State; // Get the state abbreviation
+            const stateCounties = countyDataArray.filter(county => county.State === stateAbbreviation);
+
+            // Check if all counties in the state are already selected
+            const allSelected = stateCounties.every(county => 
+                selectedCounties.some(selected => selected.FIPS === county.FIPS)
+            );
+
+            if (allSelected) {
+                // Deselect all counties in the state
+                selectedCounties = selectedCounties.filter(
+                    selected => !stateCounties.some(county => county.FIPS === selected.FIPS)
+                );
+            } else {
+                // Select all counties in the state
+                selectedCounties = selectedCounties.concat(stateCounties);
+            }
+
+            // Update the UI
+            updateCountySelection(svg, stateCounties, !allSelected);
+            updateInfoPaneWithSelectedCounties(stateCounties, !allSelected);
         });
+}
+
+// Function to update county selection on the map
+function updateCountySelection(svg, counties, isSelected) {
+    counties.forEach(county => {
+        const countyPath = svg.selectAll("path").filter(d => d.properties.FIPS === county.FIPS);
+        if (isSelected) {
+            countyPath.attr("stroke", "white").attr("stroke-width", 2);
+        } else {
+            countyPath.attr("stroke", "none").attr("stroke-width", 0);
+        }
+    });
+}
+
+// Function to update the info pane with selected counties
+function updateInfoPaneWithSelectedCounties(counties, isSelected) {
+    const infoPane = d3.select("#info-container");
+    if (isSelected) {
+        const aggregatedVotes = counties.reduce((totals, county) => {
+            totals.Republican += county.Republican;
+            totals.Democrat += county.Democrat;
+            totals.OtherVotes += county.OtherVotes;
+            return totals;
+        }, { Republican: 0, Democrat: 0, OtherVotes: 0 });
+
+        const totalVotes = aggregatedVotes.Republican + aggregatedVotes.Democrat + aggregatedVotes.OtherVotes;
+        const firstCounty = counties[0];
+
+        // Calculate the total population of all counties in the same state as the first county
+        const stateTotalPopulation = countyDataArray
+            .filter(county => county.State === firstCounty.State)
+            .reduce((sum, county) => sum + county.Population, 0);
+
+        // Update the info pane with aggregated data
+        updateInfoPane(infoPane, {
+            counties,
+            aggregatedVotes,
+            totalVotes,
+            stateTotalPopulation,
+            countyType: firstCounty.vote_total > 50000 ? "Urban" : "Rural",
+        });
+    } else {
+        infoPane.style("display", "none");
+    }
 }
 
 export function countSelectedCounties() {
