@@ -1,8 +1,7 @@
 import * as d3 from 'd3';
 import { stateElectoralVotes } from './electoralVotes.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
-import { updateStateColor } from './statemap.js';
-import { voteMap, stateColorToggle, stateLastUpdated } from './statemap.js';
+import { voteMap, stateColorToggle, stateLastUpdated, updateStateColor } from './statemap.js';
 
 export let countyDataArray = [];
 export let originalCountyDataArray = [];
