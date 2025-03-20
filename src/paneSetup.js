@@ -1,4 +1,5 @@
 import * as d3 from 'd3';
+import { selectedCounties } from './mouseEvents.js';
 
 // Function to create the info pane
 export function createInfoPane() {
@@ -122,7 +123,7 @@ export function createUpdatePane() {
     return { updatePane, repSlider, demSlider, otherSlider, submitButton, resetButton };
 }
 
-// Function to update the bar chart
+// Function to update the bar chart with percentage swing
 export function updateBarChart(data, containerId = "#bar-chart") {
     const { republicanVotes, democratVotes, otherVotes } = data;
 
@@ -130,7 +131,7 @@ export function updateBarChart(data, containerId = "#bar-chart") {
     d3.select(containerId).selectAll("*").remove();
 
     // Set up dimensions
-    const margin = { top: 20, right: 10, bottom: 30, left: 10 }; // Reduced left margin
+    const margin = { top: 20, right: 10, bottom: 30, left: 10 };
     const width = 200 - margin.left - margin.right;
     const height = 150 - margin.top - margin.bottom;
 
@@ -141,11 +142,33 @@ export function updateBarChart(data, containerId = "#bar-chart") {
         .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Calculate percentages for the y-axis
+    // Calculate total votes for the selected counties
     const totalVotes = republicanVotes + democratVotes + otherVotes;
-    const repPercentage = totalVotes > 0 ? (republicanVotes / totalVotes) * 100 : 0;
-    const demPercentage = totalVotes > 0 ? (democratVotes / totalVotes) * 100 : 0;
-    const otherPercentage = totalVotes > 0 ? (otherVotes / totalVotes) * 100 : 0;
+
+    // Calculate original vote percentages for the selected counties
+    const originalRepublicanVotes = selectedCounties.reduce((sum, county) => sum + (county.originalVotes?.Republican || 0), 0);
+    const originalDemocratVotes = selectedCounties.reduce((sum, county) => sum + (county.originalVotes?.Democrat || 0), 0);
+    const originalOtherVotes = selectedCounties.reduce((sum, county) => sum + (county.originalVotes?.OtherVotes || 0), 0);
+    const originalTotalVotes = originalRepublicanVotes + originalDemocratVotes + originalOtherVotes;
+
+    const originalRepPercentage = originalTotalVotes > 0 ? (originalRepublicanVotes / originalTotalVotes) * 100 : 0;
+    const originalDemPercentage = originalTotalVotes > 0 ? (originalDemocratVotes / originalTotalVotes) * 100 : 0;
+    const originalOtherPercentage = originalTotalVotes > 0 ? (originalOtherVotes / originalTotalVotes) * 100 : 0;
+
+    // Calculate current vote percentages
+    const currentRepPercentage = totalVotes > 0 ? (republicanVotes / totalVotes) * 100 : 0;
+    const currentDemPercentage = totalVotes > 0 ? (democratVotes / totalVotes) * 100 : 0;
+    const currentOtherPercentage = totalVotes > 0 ? (otherVotes / totalVotes) * 100 : 0;
+
+    // Calculate percentage swing
+    const repSwing = currentRepPercentage - originalRepPercentage;
+    const demSwing = currentDemPercentage - originalDemPercentage;
+    const otherSwing = currentOtherPercentage - originalOtherPercentage;
+
+    // Cap swings at ±50%
+    const cappedRepSwing = Math.max(-50, Math.min(50, repSwing));
+    const cappedDemSwing = Math.max(-50, Math.min(50, demSwing));
+    const cappedOtherSwing = Math.max(-50, Math.min(50, otherSwing));
 
     // Define scales
     const x = d3.scaleBand()
@@ -154,23 +177,23 @@ export function updateBarChart(data, containerId = "#bar-chart") {
         .padding(0.1);
 
     const y = d3.scaleLinear()
-        .domain([0, 100]) // Fixed y-axis domain (0% to 100%)
+        .domain([-50, 50]) // Cap swings at ±50%
         .range([height, 0]);
 
-    // Add bars
+    // Add bars for percentage swing
     svg.selectAll(".bar")
         .data([
-            { party: "Republican", percentage: repPercentage, votes: republicanVotes },
-            { party: "Democrat", percentage: demPercentage, votes: democratVotes },
-            { party: "Other", percentage: otherPercentage, votes: otherVotes }
+            { party: "Republican", swing: cappedRepSwing, originalSwing: repSwing },
+            { party: "Democrat", swing: cappedDemSwing, originalSwing: demSwing },
+            { party: "Other", swing: cappedOtherSwing, originalSwing: otherSwing }
         ])
         .enter()
         .append("rect")
         .attr("class", "bar")
         .attr("x", d => x(d.party))
-        .attr("y", d => y(d.percentage))
+        .attr("y", d => y(Math.max(0, d.swing))) // Start bars at 0 for positive swings
         .attr("width", x.bandwidth())
-        .attr("height", d => height - y(d.percentage))
+        .attr("height", d => Math.abs(y(0) - y(d.swing))) // Height based on capped swing magnitude
         .attr("fill", d => {
             if (d.party === "Republican") return "red";
             if (d.party === "Democrat") return "blue";
@@ -182,24 +205,28 @@ export function updateBarChart(data, containerId = "#bar-chart") {
         .attr("transform", `translate(0,${height})`)
         .call(d3.axisBottom(x));
 
-    // Remove y-axis labels
+    // Add y-axis (optional, for reference)
     svg.append("g")
-        .call(d3.axisLeft(y).tickFormat("")); // No labels on the y-axis
+        .call(d3.axisLeft(y).ticks(5).tickFormat(d => `${d}%`));
 
-    // Add labels (absolute vote numbers)
+    // Add labels for percentage swing
     svg.selectAll(".label")
         .data([
-            { party: "Republican", percentage: repPercentage, votes: republicanVotes },
-            { party: "Democrat", percentage: demPercentage, votes: democratVotes },
-            { party: "Other", percentage: otherPercentage, votes: otherVotes }
+            { party: "Republican", swing: cappedRepSwing, originalSwing: repSwing },
+            { party: "Democrat", swing: cappedDemSwing, originalSwing: demSwing },
+            { party: "Other", swing: cappedOtherSwing, originalSwing: otherSwing }
         ])
         .enter()
         .append("text")
         .attr("class", "label")
         .attr("x", d => x(d.party) + x.bandwidth() / 2)
-        .attr("y", d => y(d.percentage) - 5)
+        .attr("y", d => y(d.swing) - 5)
         .attr("text-anchor", "middle")
-        .text(d => d.votes.toLocaleString()); // Display absolute vote numbers
+        .text(d => {
+            if (d.originalSwing > 50) return ">50%"; // Show ">50%" for swings over 50%
+            if (d.originalSwing < -50) return "<-50%"; // Show "<-50%" for swings below -50%
+            return `${d.originalSwing.toFixed(1)}%`; // Show actual swing otherwise
+        });
 }
 
 // Function to create the tooltip

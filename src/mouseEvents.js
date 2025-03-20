@@ -3,7 +3,8 @@ import { updateTooltip, hideTooltip, updateInfoPane } from './paneSetup.js';
 import { countyDataArray } from './voteManager.js';
 import { setupSliders } from './sliderHandler.js';
 
-let selectedCounties = []; // Track selected counties
+// Export selectedCounties array
+export let selectedCounties = []; // Track selected counties
 
 export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders, buttons, svg, infoPane) {
     const dropdown = document.getElementById('data-year-selector'); // Get the dropdown element
