@@ -20,3 +20,5 @@ Far future:
 -make separate dark and light mode(maybe)
 -include satalite/road map layer(maybe)
 -include interactive data by demographic(like cookpolitical.com/swingomater) (maybe)
+
+again
