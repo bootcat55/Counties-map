@@ -191,6 +191,7 @@ function updateElectoralVotesDisplay(svg) {
                 .attr("font-weight", "bold")
                 .attr("stroke", "none")
                 .attr("stroke-width", 0)
+                .style("pointer-events", "none") // ← KEY FIX: Makes text non-interactive
                 .text(electoralVotes);
         }
     });

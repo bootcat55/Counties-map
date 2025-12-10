@@ -159,19 +159,50 @@
     text-align: center;
     margin: 0 auto 10px auto; /* Center the chart */
     transform: translateX(-350px); /* Move 200px to the left */
+    will-change: transform; /* Hint to browser for optimization */
+    contain: layout style; /* Improve performance */
 }
 
-/* Styling for bar chart text labels */
-#election-results-chart text {
-    font-size: 14px;
-    fill: #f0f0f0;
-    font-weight: bold;
+/* Enhanced bar chart animations */
+#election-results-chart svg.animated-chart {
+    will-change: transform;
+    contain: layout style;
 }
 
-/* Styling for bars in the stacked bar chart */
+/* Enhanced bar animations */
 #election-results-chart rect {
     stroke: #333;
     stroke-width: 1px;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother timing function */
+    transform-origin: left center; /* For smoother scaling */
+}
+
+/* Chart labels with transitions */
+#election-results-chart text.chart-label {
+    font-size: 14px;
+    fill: #f0f0f0;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    transition: opacity 0.3s ease;
+}
+
+/* Specific label colors for better visibility */
+#election-results-chart text.democrat-label {
+    fill: #aaccff;
+}
+
+#election-results-chart text.republican-label {
+    fill: #ffaaaa;
+}
+
+#election-results-chart text.tctc-label {
+    fill: #ddbbff;
+}
+
+/* Ensure marker stays on top */
+#election-results-chart .threshold-marker,
+#election-results-chart .marker-label {
+    pointer-events: none;
 }
 
 /* Styling for the 270-vote marker */
@@ -290,4 +321,13 @@ body {
 /* Reset button styling */
 #reset-all {
     margin-top: 10px;
+}
+
+#state-map text.electoral-vote {
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    cursor: default;
 }

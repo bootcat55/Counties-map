@@ -2,141 +2,177 @@ import * as d3 from 'd3';
 import { stateElectoralVotes, stateElectoralVotes2024 } from './electoralVotes.js';
 import { voteMap, stateColorToggle } from './statemap.js';
 
-let use2024Votes = false;  // Track whether to use 2024 electoral votes
+let use2024Votes = false;
+let updateTimeout = null;
+let elements = null;
+let currentResults = { republicanVotes: 0, democratVotes: 0, tooCloseToCallVotes: 0 };
 
-// Function to draw the stacked bar chart with a 270 electoral vote marker
-export function drawStackedBarChart(results) {
+// Function to draw the stacked bar chart
+export function drawStackedBarChart(newResults) {
+    const svg = d3.select("#election-results-chart");
     const svgWidth = 600;
     const svgHeight = 100;
-    const svg = d3.select("#election-results-chart").html("") // Clear any previous chart
-        .append("svg")
-        .attr("width", svgWidth)
-        .attr("height", svgHeight);
+    
+    const totalVotes = newResults.republicanVotes + newResults.democratVotes + newResults.tooCloseToCallVotes;
+    const xScale = d3.scaleLinear().domain([0, totalVotes]).range([0, svgWidth]);
 
-    const totalVotes = results.republicanVotes + results.democratVotes + results.tooCloseToCallVotes;
-
-    const xScale = d3.scaleLinear()
-        .domain([0, totalVotes])
-        .range([0, svgWidth]);
-
-    // Draw Democrat bar (blue)
-    svg.append("rect")
-        .attr("x", 0)
-        .attr("y", 20)
-        .attr("width", xScale(results.democratVotes))
-        .attr("height", 30)
-        .attr("fill", "blue");
-
-    // Draw "Too Close to Call" bar (purple)
-    svg.append("rect")
-        .attr("x", xScale(results.democratVotes))
-        .attr("y", 20)
-        .attr("width", xScale(results.tooCloseToCallVotes))
-        .attr("height", 30)
-        .attr("fill", "purple");
-
-    // Draw Republican bar (red)
-    svg.append("rect")
-        .attr("x", xScale(results.democratVotes) + xScale(results.tooCloseToCallVotes))
-        .attr("y", 20)
-        .attr("width", xScale(results.republicanVotes))
-        .attr("height", 30)
-        .attr("fill", "red");
-
-    // Add labels for each section
-    svg.append("text")
-        .attr("x", xScale(results.democratVotes) / 2)
-        .attr("y", 15)
-        .attr("text-anchor", "middle")
-        .text(`Democrat: ${results.democratVotes} votes`);
-
-    if (results.tooCloseToCallVotes > 0) {
-        svg.append("text")
-            .attr("x", xScale(results.democratVotes) + (xScale(results.tooCloseToCallVotes) / 2))
-            .attr("y", 15)
-            .attr("text-anchor", "middle")
-            .text(`Too close to call: ${results.tooCloseToCallVotes} votes`);
+    // Create or update SVG
+    let chartSvg = svg.select("svg");
+    if (chartSvg.empty()) {
+        chartSvg = svg.html("").append("svg")
+            .attr("width", svgWidth)
+            .attr("height", svgHeight)
+            .attr("class", "animated-chart");
+        
+        // Store element references
+        elements = {
+            democratBar: chartSvg.append("rect").attr("class", "democrat-bar").attr("y", 20).attr("height", 30).attr("fill", "blue"),
+            tctcBar: chartSvg.append("rect").attr("class", "tctc-bar").attr("y", 20).attr("height", 30).attr("fill", "purple"),
+            republicanBar: chartSvg.append("rect").attr("class", "republican-bar").attr("y", 20).attr("height", 30).attr("fill", "red"),
+            labels: {
+                democrat: chartSvg.append("text").attr("class", "chart-label democrat-label").attr("y", 15).attr("text-anchor", "middle"),
+                tctc: chartSvg.append("text").attr("class", "chart-label tctc-label").attr("y", 15).attr("text-anchor", "middle"),
+                republican: chartSvg.append("text").attr("class", "chart-label republican-label").attr("y", 15).attr("text-anchor", "middle")
+            }
+        };
+        
+        // Static 270 marker
+        const markerX = xScale(270);
+        chartSvg.append("line")
+            .attr("class", "threshold-marker")
+            .attr("x1", markerX).attr("x2", markerX)
+            .attr("y1", 10).attr("y2", 70)
+            .attr("stroke", "black")
+            .attr("stroke-width", 2)
+            .attr("stroke-dasharray", "4 2");
+        
+        chartSvg.append("text")
+            .attr("class", "marker-label")
+            .attr("x", markerX + 5).attr("y", 10)
+            .attr("fill", "black")
+            .text("270 votes");
     }
 
-    svg.append("text")
-        .attr("x", xScale(results.democratVotes) + xScale(results.tooCloseToCallVotes) + (xScale(results.republicanVotes) / 2))
-        .attr("y", 15)
-        .attr("text-anchor", "middle")
-        .text(`Republican: ${results.republicanVotes} votes`);
+    // Update bars (CSS handles animation)
+    elements.democratBar.attr("width", xScale(newResults.democratVotes));
+    elements.tctcBar
+        .attr("x", xScale(newResults.democratVotes))
+        .attr("width", xScale(newResults.tooCloseToCallVotes));
+    elements.republicanBar
+        .attr("x", xScale(newResults.democratVotes + newResults.tooCloseToCallVotes))
+        .attr("width", xScale(newResults.republicanVotes));
 
-    // Add 270 electoral vote marker
-    const electoralThreshold = 270;
-    const markerX = xScale(electoralThreshold);
-
-    svg.append("line")
-        .attr("x1", markerX)
-        .attr("x2", markerX)
-        .attr("y1", 10)
-        .attr("y2", 70)
-        .attr("stroke", "black")
-        .attr("stroke-width", 2)
-        .attr("stroke-dasharray", "4 2");
-
-    svg.append("text")
-        .attr("x", markerX + 5)
-        .attr("y", 10)
-        .attr("fill", "black")
-        .attr("font-size", "12px")
-        .text("270 votes");
+    // Update labels with counting animation
+    updateLabelsWithCount(newResults, xScale);
+    currentResults = { ...newResults };
 }
 
-// Improved electoral votes calculation based on vote data and override checks
-function calculateElectoralVotesFromMap(voteMap, stateColorToggle) {
-    let republicanVotes = 0;
-    let democratVotes = 0;
-    let tooCloseToCallVotes = 0;
+// Smooth number counting animation
+function countAnimation(element, start, end, duration = 500) {
+    if (start === end) return;
+    
+    const startTime = Date.now();
+    const range = end - start;
+    
+    function update() {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+        const current = Math.round(start + (range * eased));
+        
+        element.text(current);
+        
+        if (progress < 1) {
+            requestAnimationFrame(update);
+        }
+    }
+    
+    requestAnimationFrame(update);
+}
 
-    // Choose the correct electoral vote data set based on the toggle
+// Update labels with counting animation
+function updateLabelsWithCount(newResults, xScale) {
+    // Democrat label
+    const demStart = currentResults.democratVotes;
+    const demEnd = newResults.democratVotes;
+    elements.labels.democrat
+        .text(demStart)
+        .attr("x", xScale(newResults.democratVotes) / 2);
+    
+    countAnimation(elements.labels.democrat, demStart, demEnd);
+    elements.labels.democrat.node().textContent = `Democrat: ${demStart}`;
+
+    // TCTC label
+    if (newResults.tooCloseToCallVotes > 0) {
+        const tctcStart = currentResults.tooCloseToCallVotes;
+        const tctcEnd = newResults.tooCloseToCallVotes;
+        elements.labels.tctc
+            .text(tctcStart)
+            .attr("x", xScale(newResults.democratVotes) + (xScale(newResults.tooCloseToCallVotes) / 2))
+            .style("opacity", 1);
+        
+        countAnimation(elements.labels.tctc, tctcStart, tctcEnd);
+        elements.labels.tctc.node().textContent = `Too close: ${tctcStart}`;
+    } else {
+        elements.labels.tctc.style("opacity", 0);
+    }
+
+    // Republican label
+    const repStart = currentResults.republicanVotes;
+    const repEnd = newResults.republicanVotes;
+    elements.labels.republican
+        .text(repStart)
+        .attr("x", xScale(newResults.democratVotes + newResults.tooCloseToCallVotes) + (xScale(newResults.republicanVotes) / 2));
+    
+    countAnimation(elements.labels.republican, repStart, repEnd);
+    elements.labels.republican.node().textContent = `Republican: ${repStart}`;
+}
+
+// Calculate electoral votes
+function calculateElectoralVotesFromMap() {
+    let republicanVotes = 0, democratVotes = 0, tooCloseToCallVotes = 0;
     const electoralVotesData = use2024Votes ? stateElectoralVotes2024 : stateElectoralVotes;
 
     voteMap.forEach((votes, state) => {
-        // Check for a manual override color
         const overrideColor = stateColorToggle.get(state);
+        const ev = electoralVotesData[state];
 
-        if (overrideColor === "red") {
-            republicanVotes += electoralVotesData[state];
-        } else if (overrideColor === "blue") {
-            democratVotes += electoralVotesData[state];
-        } else if (overrideColor === "gray") {
-            tooCloseToCallVotes += electoralVotesData[state];
-        } else {
-            // No override, use actual vote comparison based on percentages
+        if (overrideColor === "red") republicanVotes += ev;
+        else if (overrideColor === "blue") democratVotes += ev;
+        else if (overrideColor === "gray") tooCloseToCallVotes += ev;
+        else {
             const totalVotes = votes.totalRepublican + votes.totalDemocrat + votes.totalOther;
-            const percentageRepublican = (votes.totalRepublican / totalVotes) * 100;
-            const percentageDemocrat = (votes.totalDemocrat / totalVotes) * 100;
-
-            if (percentageRepublican > percentageDemocrat) {
-                republicanVotes += electoralVotesData[state];
-            } else if (percentageDemocrat > percentageRepublican) {
-                democratVotes += electoralVotesData[state];
-            } else {
-                tooCloseToCallVotes += electoralVotesData[state];
-            }
+            if (totalVotes === 0) tooCloseToCallVotes += ev;
+            else if (votes.totalRepublican > votes.totalDemocrat) republicanVotes += ev;
+            else if (votes.totalDemocrat > votes.totalRepublican) democratVotes += ev;
+            else tooCloseToCallVotes += ev;
         }
     });
 
     return { republicanVotes, democratVotes, tooCloseToCallVotes };
 }
 
-// Update the chart based on county vote updates, state color toggles, or electoral vote toggle
+// Throttled update
 function updateChart() {
-    const electoralResults = calculateElectoralVotesFromMap(voteMap, stateColorToggle);
-    drawStackedBarChart(electoralResults);
+    clearTimeout(updateTimeout);
+    updateTimeout = setTimeout(() => {
+        drawStackedBarChart(calculateElectoralVotesFromMap());
+    }, 100);
 }
 
-// Event listeners to handle all necessary updates for stacked bar chart
-window.addEventListener('countyVoteUpdated', updateChart);
-window.addEventListener('stateColorToggled', updateChart);
-window.addEventListener('stateColorChangedByVotes', updateChart);
-
-// Listen for the toggle event from the state map to switch between 2024 and default electoral votes
-window.addEventListener('electoralVoteToggle', () => {
-    use2024Votes = !use2024Votes;
-    updateChart();  // Redraw the chart with updated electoral votes
+// Initialize on load
+window.addEventListener('DOMContentLoaded', () => {
+    const results = calculateElectoralVotesFromMap();
+    currentResults = { ...results };
+    drawStackedBarChart(results);
 });
 
+// Event listeners
+['countyVoteUpdated', 'stateColorToggled', 'stateColorChangedByVotes'].forEach(event => {
+    window.addEventListener(event, updateChart);
+});
+
+window.addEventListener('electoralVoteToggle', () => {
+    use2024Votes = !use2024Votes;
+    updateChart();
+});
