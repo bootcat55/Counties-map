@@ -331,3 +331,16 @@ body {
     -ms-user-select: none;
     cursor: default;
 }
+
+#state-map svg text {
+    stroke: none !important;
+    stroke-width: 0 !important;
+    paint-order: normal !important;
+    text-shadow: none !important;
+}
+
+/* Specifically target electoral vote text */
+.electoral-vote {
+    stroke: none !important;
+    stroke-width: 0 !important;
+}

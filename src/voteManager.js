@@ -1,10 +1,13 @@
 import * as d3 from 'd3';
-import { stateElectoralVotes } from './electoralVotes.js';
+import { stateElectoralVotes, stateElectoralVotes2024 } from './electoralVotes.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
 import { voteMap, stateColorToggle, stateLastUpdated, updateStateColor } from './statemap.js';
 
 export let countyDataArray = [];
 export let originalCountyDataArray = [];
+
+// Track current census apportionment
+let currentApportionment = '2010'; // '2010' or '2020'
 
 // Initialize county data and backup the original data
 export function initializeCountyDataArray(data) {
@@ -72,7 +75,7 @@ export function updateVoteTotals(county, newRepublicanVotes, newDemocratVotes, n
     updateStateColor(county.State);
 }
 
-// Reset a county’s votes to original and update color
+// Reset a county's votes to original and update color
 export function resetCountyVotes(county) {
     const originalCounty = originalCountyDataArray.find(c => c.FIPS === county.FIPS);
     if (originalCounty) {
@@ -101,28 +104,41 @@ export function resetCountyVotes(county) {
     }
 }
 
-// Calculate electoral votes per state based on county data
+// Get the appropriate electoral vote map based on current apportionment
+function getElectoralVotesMap() {
+    return currentApportionment === '2010' ? stateElectoralVotes : stateElectoralVotes2024;
+}
+
+// Calculate electoral votes per state based on county data and current apportionment
 export function calculateElectoralVotes(data) {
     let republicanVotes = 0;
     let democratVotes = 0;
     let tooCloseToCallVotes = 0;
 
+    const electoralVotesMap = getElectoralVotesMap();
     const states = Array.from(new Set(data.map(d => d.State)));
+    
     states.forEach(state => {
         const stateVotes = data.filter(d => d.State === state);
         const stateTotalRepublican = d3.sum(stateVotes, d => d.Republican);
         const stateTotalDemocrat = d3.sum(stateVotes, d => d.Democrat);
+        const electoralVotes = electoralVotesMap[state] || 0;
 
         if (stateTotalRepublican > stateTotalDemocrat) {
-            republicanVotes += stateElectoralVotes[state];
+            republicanVotes += electoralVotes;
         } else if (stateTotalDemocrat > stateTotalRepublican) {
-            democratVotes += stateElectoralVotes[state];
+            democratVotes += electoralVotes;
         } else {
-            tooCloseToCallVotes += stateElectoralVotes[state];
+            tooCloseToCallVotes += electoralVotes;
         }
     });
 
-    return { republicanVotes, democratVotes, tooCloseToCallVotes };
+    return { 
+        republicanVotes, 
+        democratVotes, 
+        tooCloseToCallVotes,
+        apportionmentYear: currentApportionment
+    };
 }
 
 // Update state-level vote totals
@@ -145,3 +161,47 @@ export function updateCountyColor(path, county) {
         path.attr('fill', county.vote_total === 0 ? '#ccc' : 'purple');
     }
 }
+
+// Set the current census apportionment and trigger updates
+export function setApportionment(censusYear) {
+    if (censusYear !== '2010' && censusYear !== '2020') {
+        console.warn(`Invalid census year: ${censusYear}. Using '2010' as default.`);
+        censusYear = '2010';
+    }
+    
+    if (currentApportionment !== censusYear) {
+        currentApportionment = censusYear;
+        
+        // Recalculate electoral votes with new apportionment
+        const electoralResults = calculateElectoralVotes(countyDataArray);
+        
+        // Dispatch event to notify other components
+        window.dispatchEvent(new CustomEvent('electoralVotesRecalculated', {
+            detail: {
+                ...electoralResults,
+                censusYear: currentApportionment
+            }
+        }));
+        
+        console.log(`Apportionment updated to ${currentApportionment} Census`);
+    }
+}
+
+// Get the current apportionment setting
+export function getCurrentApportionment() {
+    return currentApportionment;
+}
+
+// Recalculate electoral votes with current data and apportionment
+export function recalculateElectoralVotes() {
+    return calculateElectoralVotes(countyDataArray);
+}
+
+// Listen for apportionment changes from the state map dropdown
+window.addEventListener('apportionmentChanged', function(e) {
+    const censusYear = e.detail.censusYear;
+    setApportionment(censusYear);
+});
+
+// Initialize with default apportionment
+setApportionment('2010');

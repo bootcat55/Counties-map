@@ -2,20 +2,16 @@ import * as d3 from 'd3';
 import { stateElectoralVotes, stateElectoralVotes2024 } from './electoralVotes.js';
 import { recalculateAndDisplayPopularVote } from './popularVote.js';
 
-// Consolidated state data maps
-export let voteMap = new Map(); // Tracks state-level vote totals
-export let stateColorToggle = new Map(); // Tracks manual color overrides
-export let stateLastUpdated = new Map(); // Tracks the source of the last update
+export let voteMap = new Map();
+export let stateColorToggle = new Map();
+export let stateLastUpdated = new Map();
 
-let voteData = []; // Stores county-level vote data
-let isDefaultVotes = true; // Tracks which set of electoral votes is displayed (2020 or 2024)
+let voteData = [];
+let isDefaultVotes = true;
 
-// Function to create the US states map
 export function createStateMap(filePath = 'data/2024county_votes.csv') {
-    // Clear the existing state map
     d3.select("#state-map").html("");
 
-    // Load county-level vote data
     d3.csv(filePath).then(voteDataLoaded => {
         voteData = voteDataLoaded.map(d => ({
             ...d,
@@ -23,50 +19,37 @@ export function createStateMap(filePath = 'data/2024county_votes.csv') {
             OtherVotes: +d['Other Votes'] || 0
         }));
 
-        // Aggregate vote totals for each state
-        const stateVotes = d3.rollups(
-            voteData,
-            v => ({
-                totalRepublican: d3.sum(v, d => +d.Republican),
-                totalDemocrat: d3.sum(v, d => +d.Democrat),
-                totalOther: d3.sum(v, d => +d.OtherVotes)
-            }),
-            d => d.State
-        );
+        const stateVotes = d3.rollups(voteData, v => ({
+            totalRepublican: d3.sum(v, d => +d.Republican),
+            totalDemocrat: d3.sum(v, d => +d.Democrat),
+            totalOther: d3.sum(v, d => +d.OtherVotes)
+        }), d => d.State);
 
-        // Update the voteMap with state-level vote totals
         voteMap.clear();
-        for (const [state, totals] of stateVotes) {
-            voteMap.set(state, totals);
-        }
+        for (const [state, totals] of stateVotes) voteMap.set(state, totals);
 
-        // Create a container for the SVG map
-        const svgContainer = d3.select("#state-map")
-            .append("div")
-            .attr("class", "svg-container");
+        const svgContainer = d3.select("#state-map").append("div").attr("class", "svg-container");
 
-        // Load the US states SVG file
         d3.xml('data/us-states6.svg').then(data => {
-            const importedNode = document.importNode(data.documentElement, true);
-            svgContainer.node().appendChild(importedNode);
+            // Remove any stroke styles from the imported SVG
+            const svgElement = data.documentElement;
+            svgElement.querySelectorAll('style').forEach(style => style.remove());
+            svgElement.querySelectorAll('[stroke]').forEach(el => el.removeAttribute('stroke'));
+            svgElement.querySelectorAll('[stroke-width]').forEach(el => el.removeAttribute('stroke-width'));
 
+            const importedNode = document.importNode(svgElement, true);
+            svgContainer.node().appendChild(importedNode);
             const svg = d3.select(svgContainer.node()).select("svg");
 
-            // Display electoral votes on the map
+            addCensusDropdown(svg);
             updateElectoralVotesDisplay(svg);
-
-            // Add a button to toggle electoral votes
-            addToggleButton(svg);
-
-            // Render state colors based on vote totals
             updateStateColors(svg);
 
-            // Add tooltip functionality
+            // RESTORED TO ORIGINAL TOOLTIP
             const tooltip = d3.select("#state-tooltip")
                 .attr("class", "tooltip")
                 .style("display", "none");
 
-            // Add mouseover and mouseout events for tooltips
             svg.selectAll("path")
                 .on("mouseover", function (event) {
                     const stateId = this.getAttribute("id");
@@ -125,10 +108,7 @@ export function createStateMap(filePath = 'data/2024county_votes.csv') {
                         const defaultColor = votes.totalRepublican > votes.totalDemocrat ? "red" : "blue";
                         d3.select(this).style("fill", defaultColor);
                     }
-                });
-
-            // Add click event to override state colors
-            svg.selectAll("path")
+                })
                 .on("click", function() {
                     const stateId = this.getAttribute("id");
                     const currentColor = stateColorToggle.get(stateId) || "blue";
@@ -153,7 +133,6 @@ export function createStateMap(filePath = 'data/2024county_votes.csv') {
     });
 }
 
-// Function to update state colors based on vote totals
 export function updateStateColors(svg) {
     svg.selectAll("path").style("fill", function () {
         const stateId = this.getAttribute("id");
@@ -169,16 +148,15 @@ export function updateStateColors(svg) {
     });
 }
 
-// Function to update the electoral votes displayed on the map
 function updateElectoralVotesDisplay(svg) {
     const electoralVotesData = isDefaultVotes ? stateElectoralVotes : stateElectoralVotes2024;
-
-    svg.selectAll("text.electoral-vote").remove(); // Clear existing electoral vote labels
-
+    
+    svg.selectAll("text.electoral-vote").remove();
+    
     svg.selectAll("path").each(function() {
         const stateId = this.getAttribute("id");
         const electoralVotes = electoralVotesData[stateId];
-
+        
         if (electoralVotes) {
             const bbox = this.getBBox();
             svg.append("text")
@@ -190,53 +168,73 @@ function updateElectoralVotesDisplay(svg) {
                 .attr("font-size", "14px")
                 .attr("font-weight", "bold")
                 .attr("stroke", "none")
-                .attr("stroke-width", 0)
-                .style("pointer-events", "none") // ← KEY FIX: Makes text non-interactive
+                .attr("stroke-width", "0")
+                .style("stroke", "none")
+                .style("stroke-width", "0")
+                .style("text-shadow", "none")
+                .style("filter", "none")
+                .style("paint-order", "fill")
+                .style("pointer-events", "none")
                 .text(electoralVotes);
         }
     });
 }
 
-// Function to add a button on the SVG to toggle electoral votes
-function addToggleButton(svg) {
-    // Button background
-    svg.append("rect")
-        .attr("x", 10)
-        .attr("y", 10)
-        .attr("width", 120)
-        .attr("height", 30)
-        .attr("fill", "#333")
-        .attr("rx", 5)
-        .attr("ry", 5)
-        .style("cursor", "pointer")
-        .on("click", toggleElectoralVotes);
-
-    // Button text
-    svg.append("text")
-        .attr("x", 70)
-        .attr("y", 30)
-        .attr("text-anchor", "middle")
-        .attr("fill", "white")
-        .attr("font-size", "14px")
-        .attr("stroke", "none")
-        .attr("stroke-width", 0)
-        .attr("font-weight", "bold")
-        .style("cursor", "pointer")
-        .text("2020/2024 EV")
-        .on("click", toggleElectoralVotes);
+function addCensusDropdown(svg) {
+    const dropdown = svg.append("g").attr("class", "census-dropdown").attr("transform", "translate(10, 10)");
+    
+    dropdown.append("rect")
+        .attr("width", 140).attr("height", 30).attr("fill", "#333").style("cursor", "pointer");
+    
+    const buttonText = dropdown.append("text")
+        .attr("x", 70).attr("y", 20).attr("text-anchor", "middle").attr("fill", "white")
+        .attr("stroke", "none").attr("stroke-width", "0").style("cursor", "pointer")
+        .text(isDefaultVotes ? "2010 Census" : "2020 Census");
+    
+    const options = dropdown.append("g").style("display", "none");
+    
+    const opt1 = options.append("g").attr("transform", "translate(0, 30)");
+    opt1.append("rect").attr("width", 140).attr("height", 30).attr("fill", isDefaultVotes ? "#555" : "#444")
+        .attr("stroke", "none").attr("stroke-width", "0").style("cursor", "pointer")
+        .on("click", () => selectCensus(true, svg, buttonText, opt1, opt2, options));
+    
+    opt1.append("text").attr("x", 70).attr("y", 20).attr("text-anchor", "middle").attr("fill", "white")
+        .attr("stroke", "none").attr("stroke-width", "0").style("cursor", "pointer").text("2010 Census")
+        .on("click", () => selectCensus(true, svg, buttonText, opt1, opt2, options));
+    
+    const opt2 = options.append("g").attr("transform", "translate(0, 60)");
+    opt2.append("rect").attr("width", 140).attr("height", 30).attr("fill", !isDefaultVotes ? "#555" : "#444")
+        .attr("stroke", "none").attr("stroke-width", "0").style("cursor", "pointer")
+        .on("click", () => selectCensus(false, svg, buttonText, opt1, opt2, options));
+    
+    opt2.append("text").attr("x", 70).attr("y", 20).attr("text-anchor", "middle").attr("fill", "white")
+        .attr("stroke", "none").attr("stroke-width", "0").style("cursor", "pointer").text("2020 Census")
+        .on("click", () => selectCensus(false, svg, buttonText, opt1, opt2, options));
+    
+    dropdown.on("click", (event) => {
+        event.stopPropagation();
+        options.style("display", options.style("display") === "block" ? "none" : "block");
+    });
+    
+    svg.on("click", (event) => {
+        if (!dropdown.node().contains(event.target)) options.style("display", "none");
+    });
+    
+    function selectCensus(use2010, svg, buttonText, opt1, opt2, options) {
+        if (isDefaultVotes !== use2010) {
+            isDefaultVotes = use2010;
+            updateElectoralVotesDisplay(svg);
+            buttonText.text(use2010 ? "2010 Census" : "2020 Census");
+            opt1.select("rect").attr("fill", use2010 ? "#555" : "#444");
+            opt2.select("rect").attr("fill", !use2010 ? "#555" : "#444");
+            window.dispatchEvent(new CustomEvent('apportionmentChanged', {
+                detail: { censusYear: use2010 ? '2010' : '2020' }
+            }));
+        }
+        options.style("display", "none");
+    }
 }
 
-// Function to toggle between default and 2024 electoral votes
-function toggleElectoralVotes() {
-    isDefaultVotes = !isDefaultVotes;
-    const svg = d3.select("#state-map").select("svg");
-    updateElectoralVotesDisplay(svg);
-
-    // Dispatch an event to update the stacked bar chart
-    window.dispatchEvent(new Event('electoralVoteToggle'));
-}
-
-// Function to update the state color based on updated vote totals
 export function updateStateColor(stateAbbreviation) {
     const svgContainer = d3.select("#state-map").select(".svg-container");
     svgContainer.selectAll("path")
@@ -256,7 +254,6 @@ export function updateStateColor(stateAbbreviation) {
     window.dispatchEvent(new Event('stateColorChangedByVotes'));
 }
 
-// Listen for county vote updates and recalculate state totals
 window.addEventListener('countyVoteUpdated', function(e) {
     const { state, republicanVotes, democratVotes, otherVotes, fips } = e.detail;
 
@@ -288,5 +285,4 @@ window.addEventListener('countyVoteUpdated', function(e) {
     updateStateColor(state);
 });
 
-// Initialize the state map with the default dataset
 createStateMap();
