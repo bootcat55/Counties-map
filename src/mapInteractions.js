@@ -8,7 +8,7 @@ import { createInfoPane, createUpdatePane, createTooltip, createResetAllButton }
 import { createZoomControls } from './zoom.js';
 import { setupMouseEvents } from './mouseEvents.js';
 import { readCsvFile } from './index.js';
-import { createStateMap, updateStateColors } from './statemap.js'; // Import updateStateColors
+import { createStateMap, updateStateColors } from './statemap.js';
 
 const BEDFORD_CITY_FIPS = 51515;
 const BEDFORD_COUNTY_FIPS = 51019;
@@ -53,12 +53,230 @@ const setupInteractions = (svg, geoData, tooltip, updatePane, sliders, buttons, 
     setupMouseEvents(interactionLayer, tooltip, updatePane, sliders, buttons, svg, infoPane, projection);
 };
 
+// Function to create county search
+function createCountySearch(svg, geoData, projection, zoom) {
+    const searchGroup = svg.append("g")
+        .attr("class", "county-search")
+        .attr("transform", `translate(${MAP_WIDTH - 250}, 10)`);
+
+    // Search background
+    searchGroup.append("rect")
+        .attr("width", 240)
+        .attr("height", 32)
+        .attr("fill", "white")
+        .attr("stroke", "#ccc")
+        .attr("stroke-width", 1)
+        .attr("rx", 4)
+        .attr("ry", 4);
+
+    // Search input
+    const foreignObject = searchGroup.append("foreignObject")
+        .attr("width", 200)
+        .attr("height", 30)
+        .attr("x", 10)
+        .attr("y", 1);
+
+    const searchDiv = foreignObject.append("xhtml:div")
+        .style("width", "100%")
+        .style("height", "100%");
+
+    const searchInput = searchDiv.append("xhtml:input")
+        .attr("type", "text")
+        .attr("placeholder", "Search county, state (e.g., Cook, IL)")
+        .style("width", "100%")
+        .style("height", "100%")
+        .style("border", "none")
+        .style("outline", "none")
+        .style("padding", "0 8px")
+        .style("font-size", "14px")
+        .on("input", function() {
+            const query = this.value.toLowerCase().trim();
+            clearSearchResults();
+            
+            if (query.length > 0) {
+                const results = searchCounties(query, geoData);
+                showSearchResults(results, svg, projection, zoom);
+            }
+        });
+
+    // Search icon
+    searchGroup.append("text")
+        .attr("x", 220)
+        .attr("y", 20)
+        .attr("text-anchor", "middle")
+        .attr("fill", "#666")
+        .attr("font-size", "14px")
+        .text("🔍");
+
+    // Results container
+    const resultsGroup = svg.append("g")
+        .attr("class", "search-results")
+        .attr("transform", `translate(${MAP_WIDTH - 250}, 45)`)
+        .style("display", "none");
+
+    // Function to search counties
+    function searchCounties(query, geoData) {
+        const results = [];
+        const queryParts = query.split(',').map(part => part.trim().toLowerCase());
+        const countyQuery = queryParts[0] || '';
+        const stateQuery = queryParts[1] || '';
+
+        geoData.features.forEach(feature => {
+            const countyName = (feature.properties?.County || '').toLowerCase();
+            const stateName = (feature.properties?.State || '').toLowerCase();
+            
+            let matches = false;
+            
+            if (stateQuery) {
+                matches = countyName.includes(countyQuery) && stateName.includes(stateQuery);
+            } else {
+                matches = countyName.includes(countyQuery);
+            }
+            
+            if (matches) {
+                results.push({
+                    feature: feature,
+                    county: feature.properties?.County || '',
+                    state: feature.properties?.State || '',
+                    fips: feature.properties?.FIPS || ''
+                });
+            }
+        });
+
+        return results.sort((a, b) => {
+            if (a.state === b.state) return a.county.localeCompare(b.county);
+            return a.state.localeCompare(b.state);
+        }).slice(0, 10);
+    }
+
+    // Function to show search results
+    function showSearchResults(results, svg, projection, zoom) {
+        clearSearchResults();
+        
+        if (results.length === 0) return;
+
+        const resultsGroup = svg.select(".search-results");
+        resultsGroup.style("display", "block");
+
+        // Results background
+        resultsGroup.append("rect")
+            .attr("width", 240)
+            .attr("height", results.length * 28 + 10)
+            .attr("fill", "white")
+            .attr("stroke", "#ccc")
+            .attr("stroke-width", 1)
+            .attr("rx", 4)
+            .attr("ry", 4)
+            .style("filter", "drop-shadow(0 2px 4px rgba(0,0,0,0.1))");
+
+        // Add results
+        results.forEach((result, index) => {
+            const resultGroup = resultsGroup.append("g")
+                .attr("transform", `translate(10, ${index * 28 + 10})`)
+                .style("cursor", "pointer");
+
+            resultGroup.append("rect")
+                .attr("width", 220)
+                .attr("height", 24)
+                .attr("fill", "transparent")
+                .on("mouseover", function() { d3.select(this).attr("fill", "#f0f0f0"); })
+                .on("mouseout", function() { d3.select(this).attr("fill", "transparent"); })
+                .on("click", function() {
+                    zoomToCounty(result.feature, svg, projection, zoom);
+                    searchInput.node().value = `${result.county}, ${result.state}`;
+                    clearSearchResults();
+                });
+
+            resultGroup.append("text")
+                .attr("x", 5)
+                .attr("y", 16)
+                .attr("fill", "#333")
+                .attr("font-size", "12px")
+                .text(`${result.county}, ${result.state}`);
+        });
+
+        // Close button
+        const closeGroup = resultsGroup.append("g")
+            .attr("transform", `translate(220, 5)`)
+            .style("cursor", "pointer");
+
+        closeGroup.append("circle")
+            .attr("r", 8)
+            .attr("fill", "#f0f0f0")
+            .on("mouseover", function() { d3.select(this).attr("fill", "#e0e0e0"); })
+            .on("mouseout", function() { d3.select(this).attr("fill", "#f0f0f0"); })
+            .on("click", clearSearchResults);
+
+        closeGroup.append("text")
+            .attr("x", 0)
+            .attr("y", 3)
+            .attr("text-anchor", "middle")
+            .attr("fill", "#666")
+            .attr("font-size", "10px")
+            .text("×");
+    }
+
+    // Function to clear search results
+    function clearSearchResults() {
+        const resultsGroup = svg.select(".search-results");
+        resultsGroup.selectAll("*").remove();
+        resultsGroup.style("display", "none");
+    }
+
+    // Function to zoom to a county with 25% extra zoom
+    function zoomToCounty(feature, svg, projection, zoom) {
+        const pathGenerator = d3.geoPath().projection(projection);
+        const bounds = pathGenerator.bounds(feature);
+        
+        if (!bounds || bounds[0][0] === Infinity) return;
+
+        // Calculate the bounding box
+        const [[x0, y0], [x1, y1]] = bounds;
+        const dx = x1 - x0;
+        const dy = y1 - y0;
+        const x = (x0 + x1) / 2;
+        const y = (y0 + y1) / 2;
+        
+        // Calculate scale to fit county with 25% extra zoom (1.125 = 0.9 * 1.25)
+        const padding = 50;
+        const scale = Math.min(
+            0.9 / Math.max(dx / (MAP_WIDTH - padding * 2), dy / (MAP_HEIGHT - padding * 2)),
+            100  // Maximum zoom limit
+        );
+        
+        // Calculate translation
+        const translate = [
+            MAP_WIDTH / 2 - scale * x,
+            MAP_HEIGHT / 2 - scale * y
+        ];
+        
+        // Create and apply transform
+        const transform = d3.zoomIdentity
+            .translate(translate[0], translate[1])
+            .scale(scale);
+        
+        svg.transition()
+            .duration(750)
+            .call(zoom.transform, transform);
+    }
+
+    // Clear results when clicking outside
+    svg.on("click", function(event) {
+        const searchGroup = svg.select(".county-search");
+        const resultsGroup = svg.select(".search-results");
+        
+        if (!searchGroup.node().contains(event.target) && 
+            !resultsGroup.node().contains(event.target)) {
+            clearSearchResults();
+        }
+    });
+}
+
 // Main function to initialize map interactions
 export function initializeMapInteractions() {
     const infoPane = d3.select("#info-container");
     const updateContainer = d3.select("#update-container");
 
-    // Clear existing panes to avoid duplication
     infoPane.html("");
     updateContainer.html("");
 
@@ -71,12 +289,14 @@ export function initializeMapInteractions() {
     const buttons = { submitButton, resetButton };
 
     const svg = d3.select("#county-map")
-        .html("") // Clear existing SVG to ensure a fresh map
+        .html("")
         .append("svg")
         .attr("width", MAP_WIDTH)
         .attr("height", MAP_HEIGHT);
 
-    createZoomControls(svg, MAP_WIDTH, MAP_HEIGHT);
+    // Create zoom group and get zoom instance
+    const zoomGroup = svg.append("g").attr("class", "zoom-group");
+    const zoom = createZoomControls(svg, MAP_WIDTH, MAP_HEIGHT);
 
     // Load county data
     json('data/geojson-counties-fips.json').then(geoData => {
@@ -91,7 +311,6 @@ export function initializeMapInteractions() {
             const countyData = countyDataArray.find(d => d.FIPS === +feature.id);
 
             if (+feature.id === BEDFORD_CITY_FIPS) {
-                // Assign Bedford City's properties from Bedford County
                 const bedfordCountyData = countyDataArray.find(d => d.FIPS === BEDFORD_COUNTY_FIPS);
                 if (bedfordCountyData) {
                     feature.properties = { ...bedfordCountyData };
@@ -104,30 +323,28 @@ export function initializeMapInteractions() {
         const projection = d3.geoAlbersUsa().fitSize([MAP_WIDTH, MAP_HEIGHT], filteredGeoData);
         const pathGenerator = d3.geoPath().projection(projection);
 
-        // Render county map paths
-        renderMap(svg, filteredGeoData, pathGenerator);
+        renderMap(zoomGroup, filteredGeoData, pathGenerator);
+        createCountySearch(svg, filteredGeoData, projection, zoom);
+        setupInteractions(zoomGroup, filteredGeoData, tooltip, updatePane, sliders, buttons, infoPaneElement, projection);
 
-        // Set up interactions
-        setupInteractions(svg, filteredGeoData, tooltip, updatePane, sliders, buttons, infoPaneElement, projection);
-
-        // Load and render state borders
+        // Load state borders
         json('data/states-10m.json').then(stateData => {
             const states = feature(stateData, stateData.objects.states);
 
-            svg.append("g")
+            zoomGroup.append("g")
                 .attr("class", "state-borders")
                 .selectAll("path")
                 .data(states.features)
                 .enter()
                 .append("path")
                 .attr("d", pathGenerator)
-                .attr("fill", "none") // No fill for state borders
-                .attr("stroke", "#000") // Black stroke for state borders
-                .attr("stroke-width", 1.5) // Thicker stroke for visibility
-                .attr("pointer-events", "none"); // Ensure no interaction interference
+                .attr("fill", "none")
+                .attr("stroke", "#000")
+                .attr("stroke-width", 1.5)
+                .attr("pointer-events", "none");
         });
 
-        // Reset all counties on button click
+        // Reset all counties
         resetAllButton.on("click", function (e) {
             e.preventDefault();
             filteredGeoData.features.forEach(feature => {
@@ -135,7 +352,6 @@ export function initializeMapInteractions() {
                 const countyPath = svg.selectAll("path.map-layer").filter(d => d.properties.FIPS === feature.properties.FIPS);
                 updateCountyColor(countyPath, feature.properties);
             });
-
             recalculateAndDisplayPopularVote(countyDataArray);
         });
     });
@@ -154,16 +370,9 @@ dataYearSelector.addEventListener('change', (event) => {
         : 'data/usacounty_votes.csv';
 
     readCsvFile(filePath, (data) => {
-        // Update county data with the new CSV
         initializeCountyDataArray(data);
-
-        // Recalculate and display updated popular vote
         recalculateAndDisplayPopularVote(data);
-
-        // Refresh map interactions
         initializeMapInteractions();
-
-        // Reinitialize the state map with the new dataset
         createStateMap(filePath);
     });
 });
