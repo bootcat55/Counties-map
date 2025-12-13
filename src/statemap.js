@@ -8,6 +8,7 @@ export let stateLastUpdated = new Map();
 
 let voteData = [];
 let isDefaultVotes = true;
+let showSwingStates = false;
 
 export function createStateMap(filePath = 'data/2024county_votes.csv') {
     d3.select("#state-map").html("");
@@ -26,12 +27,13 @@ export function createStateMap(filePath = 'data/2024county_votes.csv') {
         }), d => d.State);
 
         voteMap.clear();
-        for (const [state, totals] of stateVotes) voteMap.set(state, totals);
+        for (const [state, totals] of stateVotes) {
+            voteMap.set(state, totals);
+        }
 
         const svgContainer = d3.select("#state-map").append("div").attr("class", "svg-container");
 
         d3.xml('data/us-states6.svg').then(data => {
-            // Remove any stroke styles from the imported SVG
             const svgElement = data.documentElement;
             svgElement.querySelectorAll('style').forEach(style => style.remove());
             svgElement.querySelectorAll('[stroke]').forEach(el => el.removeAttribute('stroke'));
@@ -42,10 +44,10 @@ export function createStateMap(filePath = 'data/2024county_votes.csv') {
             const svg = d3.select(svgContainer.node()).select("svg");
 
             addCensusDropdown(svg);
+            addSwingStateToggle(svg);
             updateElectoralVotesDisplay(svg);
             updateStateColors(svg);
 
-            // RESTORED TO ORIGINAL TOOLTIP
             const tooltip = d3.select("#state-tooltip")
                 .attr("class", "tooltip")
                 .style("display", "none");
@@ -105,8 +107,7 @@ export function createStateMap(filePath = 'data/2024county_votes.csv') {
                     } else {
                         // Otherwise, use the vote-based color
                         const votes = voteMap.get(stateId);
-                        const defaultColor = votes.totalRepublican > votes.totalDemocrat ? "red" : "blue";
-                        d3.select(this).style("fill", defaultColor);
+                        d3.select(this).style("fill", getStateColor(stateId, votes));
                     }
                 })
                 .on("click", function() {
@@ -133,21 +134,54 @@ export function createStateMap(filePath = 'data/2024county_votes.csv') {
     });
 }
 
+// Function to get state color based on swing state mode
+function getStateColor(stateId, votes, ignoreOverride = false) {
+    // If manually overridden and not ignoring overrides, use override color
+    if (!ignoreOverride && stateColorToggle.has(stateId)) {
+        return stateColorToggle.get(stateId);
+    }
+
+    if (!votes) return "gray";
+    
+    const totalVotes = votes.totalRepublican + votes.totalDemocrat + votes.totalOther;
+    if (totalVotes === 0) return "gray";
+    
+    const repPercentage = (votes.totalRepublican / totalVotes) * 100;
+    const demPercentage = (votes.totalDemocrat / totalVotes) * 100;
+    const margin = Math.abs(repPercentage - demPercentage);
+    
+    if (showSwingStates) {
+        // 7-color mode: 3 reds, 3 blues, 1 gray for toss-up
+        if (repPercentage > demPercentage) {
+            // Republican leading
+            if (margin > 15) return "#8B0000"; // Safe Red (dark red)
+            if (margin > 8) return "#DC143C"; // Likely Red (crimson)
+            return "#FF6B6B"; // Lean Red (light red)
+        } else if (demPercentage > repPercentage) {
+            // Democrat leading
+            if (margin > 15) return "#00008B"; // Safe Blue (dark blue)
+            if (margin > 8) return "#1E90FF"; // Likely Blue (dodger blue)
+            return "#87CEFA"; // Lean Blue (light sky blue)
+        } else {
+            return "gray"; // Toss-up (exact tie)
+        }
+    } else {
+        // Simple mode: just red, blue, or gray
+        return votes.totalRepublican > votes.totalDemocrat ? "red" : 
+               votes.totalDemocrat > votes.totalRepublican ? "blue" : "gray";
+    }
+}
+
+// Function to update state colors based on vote totals
 export function updateStateColors(svg) {
     svg.selectAll("path").style("fill", function () {
         const stateId = this.getAttribute("id");
         const votes = voteMap.get(stateId);
-
-        // If the state has been manually overridden, use the override color
-        if (stateColorToggle.has(stateId)) {
-            return stateColorToggle.get(stateId);
-        }
-
-        // Otherwise, use the vote-based color
-        return votes && votes.totalRepublican > votes.totalDemocrat ? "red" : "blue";
+        return getStateColor(stateId, votes);
     });
 }
 
+// Function to update the electoral votes displayed on the map
 function updateElectoralVotesDisplay(svg) {
     const electoralVotesData = isDefaultVotes ? stateElectoralVotes : stateElectoralVotes2024;
     
@@ -180,6 +214,7 @@ function updateElectoralVotesDisplay(svg) {
     });
 }
 
+// Function to add census apportionment dropdown
 function addCensusDropdown(svg) {
     const dropdown = svg.append("g").attr("class", "census-dropdown").attr("transform", "translate(10, 10)");
     
@@ -235,25 +270,136 @@ function addCensusDropdown(svg) {
     }
 }
 
+// Function to add swing state toggle button
+function addSwingStateToggle(svg) {
+    const toggleGroup = svg.append("g")
+        .attr("class", "swing-state-toggle")
+        .attr("transform", "translate(10, 50)");
+    
+    // Toggle button background
+    toggleGroup.append("rect")
+        .attr("width", 140)
+        .attr("height", 30)
+        .attr("fill", showSwingStates ? "#4CAF50" : "#333")
+        .attr("rx", 4)
+        .attr("ry", 4)
+        .style("cursor", "pointer")
+        .on("click", function() {
+            showSwingStates = !showSwingStates;
+            updateToggleVisuals();
+            updateStateColors(svg);
+        });
+    
+    // Toggle button text
+    const toggleText = toggleGroup.append("text")
+        .attr("x", 70)
+        .attr("y", 20)
+        .attr("text-anchor", "middle")
+        .attr("fill", "white")
+        .attr("font-size", "12px")
+        .attr("stroke", "none")
+        .attr("stroke-width", "0")
+        .style("cursor", "pointer")
+        .text(showSwingStates ? "Swing States: ON" : "Swing States: OFF")
+        .on("click", function() {
+            showSwingStates = !showSwingStates;
+            updateToggleVisuals();
+            updateStateColors(svg);
+        });
+    
+    // Legend for swing states
+    const legend = svg.append("g")
+        .attr("class", "swing-state-legend")
+        .attr("transform", "translate(160, 50)")
+        .style("opacity", 0)
+        .style("pointer-events", "none");
+    
+    // Legend background
+    legend.append("rect")
+        .attr("width", 120)
+        .attr("height", 140)
+        .attr("fill", "white")
+        .attr("stroke", "#ccc")
+        .attr("stroke-width", 1)
+        .attr("rx", 4)
+        .attr("ry", 4);
+    
+    // Legend title
+    legend.append("text")
+        .attr("x", 60)
+        .attr("y", 20)
+        .attr("text-anchor", "middle")
+        .attr("font-size", "11px")
+        .attr("font-weight", "bold")
+        .text("Swing State Colors");
+    
+    // Legend items
+    const legendItems = [
+        { color: "#8B0000", label: "Safe R (>15%)" },
+        { color: "#DC143C", label: "Likely R (8-15%)" },
+        { color: "#FF6B6B", label: "Lean R (<8%)" },
+        { color: "gray", label: "Toss-up" },
+        { color: "#87CEFA", label: "Lean D (<8%)" },
+        { color: "#1E90FF", label: "Likely D (8-15%)" },
+        { color: "#00008B", label: "Safe D (>15%)" }
+    ];
+    
+    legendItems.forEach((item, index) => {
+        const y = 35 + index * 15;
+        
+        // Color box
+        legend.append("rect")
+            .attr("x", 10)
+            .attr("y", y - 6)
+            .attr("width", 10)
+            .attr("height", 10)
+            .attr("fill", item.color)
+            .attr("stroke", "#666")
+            .attr("stroke-width", 0.5);
+        
+        // Label
+        legend.append("text")
+            .attr("x", 25)
+            .attr("y", y)
+            .attr("font-size", "10px")
+            .text(item.label);
+    });
+    
+    // Show legend on hover
+    toggleGroup.on("mouseover", function() {
+        legend.transition().duration(200).style("opacity", 0.9);
+    }).on("mouseout", function() {
+        legend.transition().duration(200).style("opacity", 0);
+    });
+    
+    function updateToggleVisuals() {
+        toggleGroup.select("rect").attr("fill", showSwingStates ? "#4CAF50" : "#333");
+        toggleText.text(showSwingStates ? "Swing States: ON" : "Swing States: OFF");
+    }
+}
+
+// Function to update the state color based on updated vote totals
 export function updateStateColor(stateAbbreviation) {
     const svgContainer = d3.select("#state-map").select(".svg-container");
+    
+    // When votes are updated via sliders, remove any manual override for this state
+    if (stateColorToggle.has(stateAbbreviation)) {
+        stateColorToggle.delete(stateAbbreviation);
+    }
+    
     svgContainer.selectAll("path")
         .filter(function () { return this.getAttribute("id") === stateAbbreviation; })
         .style("fill", function () {
             const votes = voteMap.get(stateAbbreviation);
-            const newColor = votes && votes.totalRepublican > votes.totalDemocrat ? "red" : "blue";
-
-            if (stateColorToggle.has(stateAbbreviation) && stateColorToggle.get(stateAbbreviation) !== newColor) {
-                stateColorToggle.delete(stateAbbreviation);
-            }
-
-            return newColor;
+            // Use getStateColor with ignoreOverride = true to ensure we get vote-based color
+            return getStateColor(stateAbbreviation, votes, true);
         });
 
     stateLastUpdated.set(stateAbbreviation, 'voteUpdate');
     window.dispatchEvent(new Event('stateColorChangedByVotes'));
 }
 
+// Listen for county vote updates and recalculate state totals
 window.addEventListener('countyVoteUpdated', function(e) {
     const { state, republicanVotes, democratVotes, otherVotes, fips } = e.detail;
 

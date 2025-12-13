@@ -13,7 +13,7 @@ export function createZoomControls(svg, width, height) {
     }
 
     const zoom = d3.zoom()
-        .scaleExtent([1, 30])
+        .scaleExtent([1, 50])
         .translateExtent([[0, 0], [width, height]])
         .on("zoom", zoomed);
 
