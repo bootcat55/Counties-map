@@ -7,7 +7,7 @@ export let stateColorToggle = new Map();
 export let stateLastUpdated = new Map();
 
 let voteData = [];
-let isDefaultVotes = true;
+let isDefaultVotes = false; // Default to 2020 Census (2024 electoral votes)
 let showSwingStates = false;
 
 export function createStateMap(filePath = 'data/2024county_votes.csv') {
@@ -43,8 +43,17 @@ export function createStateMap(filePath = 'data/2024county_votes.csv') {
             svgContainer.node().appendChild(importedNode);
             const svg = d3.select(svgContainer.node()).select("svg");
 
-            addCensusDropdown(svg);
-            addSwingStateToggle(svg);
+            // Create a container for UI controls at the top of the SVG
+            const uiContainer = svg.append("g")
+                .attr("class", "ui-container")
+                .attr("transform", "translate(10, 10)");
+
+            // Add census dropdown first (will be underneath)
+            addCensusDropdown(uiContainer, svg);
+            
+            // Add swing state toggle second (will be on top)
+            addSwingStateToggle(uiContainer, svg);
+
             updateElectoralVotesDisplay(svg);
             updateStateColors(svg);
 
@@ -112,17 +121,8 @@ export function createStateMap(filePath = 'data/2024county_votes.csv') {
                 })
                 .on("click", function() {
                     const stateId = this.getAttribute("id");
-                    const currentColor = stateColorToggle.get(stateId) || "blue";
-                    let newColor;
-
-                    if (currentColor === "blue") {
-                        newColor = "red";
-                    } else if (currentColor === "red") {
-                        newColor = "gray";
-                    } else {
-                        newColor = "blue";
-                    }
-
+                    const newColor = getNextOverrideColor(stateId);
+                    
                     d3.select(this).style("fill", newColor);
                     stateColorToggle.set(stateId, newColor);
                     stateLastUpdated.set(stateId, 'override');
@@ -134,11 +134,88 @@ export function createStateMap(filePath = 'data/2024county_votes.csv') {
     });
 }
 
+// Function to get the next override color when clicking a state
+function getNextOverrideColor(stateId) {
+    const currentColor = stateColorToggle.get(stateId);
+    
+    if (showSwingStates) {
+        // Swing states mode: cycle through 7 colors
+        const swingColors = [
+            "#8B0000", // Safe Red
+            "#DC143C", // Likely Red  
+            "#FF6B6B", // Lean Red
+            "gray",    // Toss-up
+            "#87CEFA", // Lean Blue
+            "#1E90FF", // Likely Blue
+            "#00008B"  // Safe Blue
+        ];
+        
+        if (!currentColor) {
+            // No current override, start with Safe Red
+            return "#8B0000";
+        }
+        
+        const currentIndex = swingColors.indexOf(currentColor);
+        if (currentIndex === -1) {
+            // Current color not in swing colors (e.g., from simple mode), start fresh
+            return "#8B0000";
+        }
+        
+        // Cycle to next color
+        const nextIndex = (currentIndex + 1) % swingColors.length;
+        return swingColors[nextIndex];
+    } else {
+        // Simple mode: cycle through 3 basic colors
+        const simpleColors = ["blue", "red", "gray"];
+        
+        if (!currentColor) {
+            // No current override, start with blue
+            return "blue";
+        }
+        
+        // Check if current color is in simple colors
+        if (simpleColors.includes(currentColor)) {
+            const currentIndex = simpleColors.indexOf(currentColor);
+            const nextIndex = (currentIndex + 1) % simpleColors.length;
+            return simpleColors[nextIndex];
+        } else {
+            // Current color is from swing mode, convert to nearest simple color
+            if (currentColor === "#8B0000" || currentColor === "#DC143C" || currentColor === "#FF6B6B") {
+                return "red";
+            } else if (currentColor === "#00008B" || currentColor === "#1E90FF" || currentColor === "#87CEFA") {
+                return "blue";
+            } else {
+                return "gray";
+            }
+        }
+    }
+}
+
 // Function to get state color based on swing state mode
 function getStateColor(stateId, votes, ignoreOverride = false) {
     // If manually overridden and not ignoring overrides, use override color
     if (!ignoreOverride && stateColorToggle.has(stateId)) {
-        return stateColorToggle.get(stateId);
+        const overrideColor = stateColorToggle.get(stateId);
+        
+        // If we're in simple mode but override is a swing color, convert it
+        if (!showSwingStates && overrideColor !== "red" && overrideColor !== "blue" && overrideColor !== "gray") {
+            if (overrideColor === "#8B0000" || overrideColor === "#DC143C" || overrideColor === "#FF6B6B") {
+                return "red";
+            } else if (overrideColor === "#00008B" || overrideColor === "#1E90FF" || overrideColor === "#87CEFA") {
+                return "blue";
+            } else {
+                return "gray";
+            }
+        }
+        
+        // If we're in swing mode but override is a simple color, convert it
+        if (showSwingStates && (overrideColor === "red" || overrideColor === "blue" || overrideColor === "gray")) {
+            if (overrideColor === "red") return "#FF6B6B"; // Default to Lean Red
+            if (overrideColor === "blue") return "#87CEFA"; // Default to Lean Blue
+            return "gray";
+        }
+        
+        return overrideColor;
     }
 
     if (!votes) return "gray";
@@ -215,8 +292,10 @@ function updateElectoralVotesDisplay(svg) {
 }
 
 // Function to add census apportionment dropdown
-function addCensusDropdown(svg) {
-    const dropdown = svg.append("g").attr("class", "census-dropdown").attr("transform", "translate(10, 10)");
+function addCensusDropdown(uiContainer, svg) {
+    const dropdown = uiContainer.append("g")
+        .attr("class", "census-dropdown")
+        .attr("transform", "translate(0, 0)"); // Position within UI container
     
     dropdown.append("rect")
         .attr("width", 140).attr("height", 30).attr("fill", "#333").style("cursor", "pointer");
@@ -226,24 +305,39 @@ function addCensusDropdown(svg) {
         .attr("stroke", "none").attr("stroke-width", "0").style("cursor", "pointer")
         .text(isDefaultVotes ? "2010 Census" : "2020 Census");
     
-    const options = dropdown.append("g").style("display", "none");
+    // Create dropdown options as a separate group appended directly to SVG (not uiContainer)
+    // This ensures it appears above everything else
+    const options = svg.append("g")
+        .attr("class", "census-dropdown-options")
+        .attr("transform", "translate(10, 10)")
+        .style("display", "none");
     
     const opt1 = options.append("g").attr("transform", "translate(0, 30)");
-    opt1.append("rect").attr("width", 140).attr("height", 30).attr("fill", isDefaultVotes ? "#555" : "#444")
-        .attr("stroke", "none").attr("stroke-width", "0").style("cursor", "pointer")
+    opt1.append("rect")
+        .attr("width", 140).attr("height", 30)
+        .attr("fill", isDefaultVotes ? "#555" : "#444")
+        .attr("stroke", "none").attr("stroke-width", "0")
+        .style("cursor", "pointer")
         .on("click", () => selectCensus(true, svg, buttonText, opt1, opt2, options));
     
-    opt1.append("text").attr("x", 70).attr("y", 20).attr("text-anchor", "middle").attr("fill", "white")
-        .attr("stroke", "none").attr("stroke-width", "0").style("cursor", "pointer").text("2010 Census")
+    opt1.append("text")
+        .attr("x", 70).attr("y", 20).attr("text-anchor", "middle").attr("fill", "white")
+        .attr("stroke", "none").attr("stroke-width", "0").style("cursor", "pointer")
+        .text("2010 Census")
         .on("click", () => selectCensus(true, svg, buttonText, opt1, opt2, options));
     
     const opt2 = options.append("g").attr("transform", "translate(0, 60)");
-    opt2.append("rect").attr("width", 140).attr("height", 30).attr("fill", !isDefaultVotes ? "#555" : "#444")
-        .attr("stroke", "none").attr("stroke-width", "0").style("cursor", "pointer")
+    opt2.append("rect")
+        .attr("width", 140).attr("height", 30)
+        .attr("fill", !isDefaultVotes ? "#555" : "#444")
+        .attr("stroke", "none").attr("stroke-width", "0")
+        .style("cursor", "pointer")
         .on("click", () => selectCensus(false, svg, buttonText, opt1, opt2, options));
     
-    opt2.append("text").attr("x", 70).attr("y", 20).attr("text-anchor", "middle").attr("fill", "white")
-        .attr("stroke", "none").attr("stroke-width", "0").style("cursor", "pointer").text("2020 Census")
+    opt2.append("text")
+        .attr("x", 70).attr("y", 20).attr("text-anchor", "middle").attr("fill", "white")
+        .attr("stroke", "none").attr("stroke-width", "0").style("cursor", "pointer")
+        .text("2020 Census")
         .on("click", () => selectCensus(false, svg, buttonText, opt1, opt2, options));
     
     dropdown.on("click", (event) => {
@@ -252,7 +346,9 @@ function addCensusDropdown(svg) {
     });
     
     svg.on("click", (event) => {
-        if (!dropdown.node().contains(event.target)) options.style("display", "none");
+        if (!dropdown.node().contains(event.target) && !options.node().contains(event.target)) {
+            options.style("display", "none");
+        }
     });
     
     function selectCensus(use2010, svg, buttonText, opt1, opt2, options) {
@@ -271,10 +367,10 @@ function addCensusDropdown(svg) {
 }
 
 // Function to add swing state toggle button
-function addSwingStateToggle(svg) {
-    const toggleGroup = svg.append("g")
+function addSwingStateToggle(uiContainer, svg) {
+    const toggleGroup = uiContainer.append("g")
         .attr("class", "swing-state-toggle")
-        .attr("transform", "translate(10, 50)");
+        .attr("transform", "translate(0, 40)"); // Positioned 40px below census dropdown
     
     // Toggle button background
     toggleGroup.append("rect")
@@ -307,7 +403,7 @@ function addSwingStateToggle(svg) {
             updateStateColors(svg);
         });
     
-    // Legend for swing states
+    // Legend for swing states - append directly to SVG to ensure proper layering
     const legend = svg.append("g")
         .attr("class", "swing-state-legend")
         .attr("transform", "translate(160, 50)")
