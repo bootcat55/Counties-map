@@ -176,3 +176,6 @@ window.addEventListener('electoralVoteToggle', () => {
     use2024Votes = !use2024Votes;
     updateChart();
 });
+
+// ADD THIS: Listen for data year changes
+document.addEventListener('dataYearChanged', updateChart);
