@@ -2,11 +2,12 @@ import * as d3 from 'd3';
 import { updateTooltip, hideTooltip, updateInfoPane } from './paneSetup.js';
 import { countyDataArray } from './voteManager.js';
 import { setupSliders } from './sliderHandler.js';
+import { setSelectedCounty } from './geoMap.js'; // Import the setSelectedCounty function
 
 // Export selectedCounties array
 export let selectedCounties = []; // Track selected counties
 
-export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders, buttons, svg, infoPane) {
+export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders, buttons, svg, infoPane, projection, geoData) {
     const dropdown = document.getElementById('data-year-selector'); // Get the dropdown element
 
     interactionLayer.selectAll("path")
@@ -29,16 +30,35 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
             hideTooltip(tooltip);
         })
         .on("click", function (event, d) {
+            event.stopPropagation();
+            
+            // Set the selected county for satellite toggle FIRST
+            setSelectedCounty(d, svg);
+            
             const alreadySelected = selectedCounties.find(c => c.FIPS === d.properties.FIPS);
             if (alreadySelected) {
                 selectedCounties = selectedCounties.filter(c => c.FIPS !== d.properties.FIPS);
                 d3.select(this).attr("stroke", "none").attr("stroke-width", 0);
+                
+                // If deselecting the last county, clear satellite selection
+                if (selectedCounties.length === 0) {
+                    setSelectedCounty(null, svg);
+                }
             } else {
                 selectedCounties.push(d.properties);
-                d3.select(this).attr("stroke", "white").attr("stroke-width", 1);
+                d3.select(this).attr("stroke", "white").attr("stroke-width", 2);
+                
+                // Store original votes for bar chart comparison if not already stored
+                if (!d.properties.originalVotes) {
+                    d.properties.originalVotes = {
+                        Republican: d.properties.Republican,
+                        Democrat: d.properties.Democrat,
+                        OtherVotes: d.properties.OtherVotes
+                    };
+                }
             }
 
-            console.log("Number of selected counties:", countSelectedCounties()); // Output the count
+            console.log("Number of selected counties:", selectedCounties.length);
 
             if (selectedCounties.length > 0) {
                 updatePane.style("display", "block");
@@ -75,6 +95,11 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
             }
         })
         .on("dblclick", function (event, d) {
+            event.stopPropagation();
+            
+            // Set satellite view to the clicked county FIRST
+            setSelectedCounty(d, svg);
+            
             const stateAbbreviation = d.properties.State; // Get the state abbreviation
             const stateCounties = countyDataArray.filter(county => county.State === stateAbbreviation);
 
@@ -88,21 +113,79 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
                 selectedCounties = selectedCounties.filter(
                     selected => !stateCounties.some(county => county.FIPS === selected.FIPS)
                 );
+                
+                // Update visual selection for all deselected counties
+                stateCounties.forEach(county => {
+                    const countyPath = svg.selectAll("path.interaction-layer")
+                        .filter(d => d.properties.FIPS === county.FIPS);
+                    countyPath.attr("stroke", "none").attr("stroke-width", 0);
+                });
+                
+                // Clear satellite selection since all counties are deselected
+                setSelectedCounty(null, svg);
             } else {
                 // Select all counties in the state
-                selectedCounties = selectedCounties.concat(stateCounties);
+                stateCounties.forEach(county => {
+                    if (!selectedCounties.some(selected => selected.FIPS === county.FIPS)) {
+                        selectedCounties.push(county);
+                        
+                        // Store original votes if not already stored
+                        if (!county.originalVotes) {
+                            county.originalVotes = {
+                                Republican: county.Republican,
+                                Democrat: county.Democrat,
+                                OtherVotes: county.OtherVotes
+                            };
+                        }
+                    }
+                });
+                
+                // Update visual selection for all selected counties
+                stateCounties.forEach(county => {
+                    const countyPath = svg.selectAll("path.interaction-layer")
+                        .filter(d => d.properties.FIPS === county.FIPS);
+                    countyPath.attr("stroke", "white").attr("stroke-width", 2);
+                });
             }
 
-            // Update the UI
-            updateCountySelection(svg, stateCounties, !allSelected);
-            updateInfoPaneWithSelectedCounties(stateCounties, !allSelected);
+            // Update the info pane
+            if (selectedCounties.length > 0) {
+                // Aggregate votes for selected counties
+                const aggregatedVotes = selectedCounties.reduce((totals, county) => {
+                    totals.Republican += county.Republican;
+                    totals.Democrat += county.Democrat;
+                    totals.OtherVotes += county.OtherVotes;
+                    return totals;
+                }, { Republican: 0, Democrat: 0, OtherVotes: 0 });
+
+                const totalVotes = aggregatedVotes.Republican + aggregatedVotes.Democrat + aggregatedVotes.OtherVotes;
+                const firstCounty = selectedCounties[0];
+
+                // Calculate the total population of all counties in the same state as the first county
+                const stateTotalPopulation = countyDataArray
+                    .filter(county => county.State === firstCounty.State)
+                    .reduce((sum, county) => sum + county.Population, 0);
+
+                updateInfoPane(infoPane, {
+                    counties: selectedCounties,
+                    aggregatedVotes,
+                    totalVotes,
+                    stateTotalPopulation,
+                    countyType: firstCounty.vote_total > 50000 ? "Urban" : "Rural",
+                });
+
+                // Update sliders
+                setupSliders(sliders, buttons, selectedCounties, updatePane, infoPane, svg, aggregatedVotes, totalVotes);
+            } else {
+                updatePane.style("display", "none");
+            }
         });
 }
 
 // Function to update county selection on the map
 function updateCountySelection(svg, counties, isSelected) {
     counties.forEach(county => {
-        const countyPath = svg.selectAll("path").filter(d => d.properties.FIPS === county.FIPS);
+        const countyPath = svg.selectAll("path.interaction-layer").filter(d => d.properties.FIPS === county.FIPS);
         if (isSelected) {
             countyPath.attr("stroke", "white").attr("stroke-width", 2);
         } else {
@@ -145,4 +228,27 @@ function updateInfoPaneWithSelectedCounties(counties, isSelected) {
 
 export function countSelectedCounties() {
     return selectedCounties.length;
+}
+
+// Function to clear all selections
+export function clearAllSelections(svg) {
+    // Clear visual selections
+    svg.selectAll("path.interaction-layer")
+        .attr("stroke", "none")
+        .attr("stroke-width", 0);
+    
+    // Clear selected counties array
+    selectedCounties = [];
+    
+    // Hide update pane
+    d3.select("#update-container").style("display", "none");
+    
+    // Clear info pane
+    d3.select("#info-container").style("display", "none");
+}
+
+// Function to get currently selected county for satellite view
+export function getSelectedCountyForSatellite() {
+    // Return the last selected county (most relevant for satellite view)
+    return selectedCounties.length > 0 ? selectedCounties[selectedCounties.length - 1] : null;
 }

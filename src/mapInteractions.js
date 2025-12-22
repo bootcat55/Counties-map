@@ -9,6 +9,8 @@ import { createZoomControls } from './zoom.js';
 import { setupMouseEvents } from './mouseEvents.js';
 import { readCsvFile } from './index.js';
 import { createStateMap, updateStateColors } from './statemap.js';
+import { initializeSatelliteToggle, setSelectedCounty, resetSatelliteMode } from './geoMap.js';
+import { stateColorToggle } from './statemap.js'; // ADD THIS LINE
 
 const BEDFORD_CITY_FIPS = 51515;
 const BEDFORD_COUNTY_FIPS = 51019;
@@ -50,7 +52,7 @@ const setupInteractions = (svg, geoData, tooltip, updatePane, sliders, buttons, 
         .attr("d", d3.geoPath().projection(projection))
         .attr("fill", "transparent");
 
-    setupMouseEvents(interactionLayer, tooltip, updatePane, sliders, buttons, svg, infoPane, projection);
+    setupMouseEvents(interactionLayer, tooltip, updatePane, sliders, buttons, svg, infoPane, projection, geoData);
 };
 
 // Function to create county search
@@ -189,7 +191,7 @@ function createCountySearch(svg, geoData, projection, zoom) {
 
             resultGroup.append("text")
                 .attr("x", 5)
-                .attr("y", 16)
+                .attr('y', 16)
                 .attr("fill", "#333")
                 .attr("font-size", "12px")
                 .text(`${result.county}, ${result.state}`);
@@ -324,7 +326,13 @@ export function initializeMapInteractions() {
         const pathGenerator = d3.geoPath().projection(projection);
 
         renderMap(zoomGroup, filteredGeoData, pathGenerator);
+        
+        // FIXED: Initialize satellite toggle BEFORE setting up interactions
+        initializeSatelliteToggle(svg, projection);
+        
         createCountySearch(svg, filteredGeoData, projection, zoom);
+        
+        // FIXED: Setup interactions AFTER toggle is created
         setupInteractions(zoomGroup, filteredGeoData, tooltip, updatePane, sliders, buttons, infoPaneElement, projection);
 
         // Load state borders
@@ -347,6 +355,10 @@ export function initializeMapInteractions() {
         // Reset all counties
         resetAllButton.on("click", function (e) {
             e.preventDefault();
+            // Reset satellite mode first
+            resetSatelliteMode(svg);
+            
+            // Reset county votes
             filteredGeoData.features.forEach(feature => {
                 resetCountyVotes(feature.properties);
                 const countyPath = svg.selectAll("path.map-layer").filter(d => d.properties.FIPS === feature.properties.FIPS);
@@ -370,6 +382,12 @@ dataYearSelector.addEventListener('change', (event) => {
         : 'data/usacounty_votes.csv';
 
     readCsvFile(filePath, (data) => {
+        // CLEAR STATE OVERRIDES when loading new data
+        stateColorToggle.clear();
+        
+        // Notify stacked bar chart about data change
+        document.dispatchEvent(new CustomEvent('dataYearChanged'));
+        
         initializeCountyDataArray(data);
         recalculateAndDisplayPopularVote(data);
         initializeMapInteractions();
