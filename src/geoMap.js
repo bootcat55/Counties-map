@@ -11,6 +11,7 @@ let satelliteImage = null;
 let currentProjection = null;
 let countyClipPath = null;
 let svgContainer = null;
+let satelliteCounties = new Set(); // Track FIPS of counties with satellite view
 
 export function createSatelliteToggle(svg, projection) {
     console.log('📡 createSatelliteToggle called');
@@ -29,38 +30,43 @@ export function createSatelliteToggle(svg, projection) {
         .attr('transform', `translate(${toggleX}, ${toggleY})`) // Updated Y position
         .style('cursor', 'pointer')
         .style('pointer-events', 'all')
-        .style('opacity', 0.5)
+        .style('opacity', 1) // Changed from 0.5 to 1 (no transparency)
         .style('display', 'block');
 
+    // Solid dark grey rectangle background for better text readability
     toggleGroup.append('rect')
         .attr('width', 180)
         .attr('height', 36)
         .attr('rx', 6)
         .attr('ry', 6)
-        .attr('fill', '#95a5a6')
-        .attr('stroke', '#7f8c8d')
+        .attr('fill', '#2c3e50') // Dark grey background
+        .attr('stroke', '#34495e')
         .attr('stroke-width', 1)
         .style('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))');
 
+    // Icon - position adjusted for rectangle
     toggleGroup.append('text')
-        .attr('x', 25)
+        .attr('x', 25) // Adjusted for rectangle
         .attr('y', 22)
         .attr('text-anchor', 'middle')
         .attr('fill', '#ecf0f1')
         .attr('font-size', '18px')
         .text('🛰️');
 
+    // Label - position adjusted for rectangle
     toggleGroup.append('text')
-        .attr('x', 110)
+        .attr('x', 80) // Adjusted for rectangle (was 40)
         .attr('y', 22)
         .attr('fill', '#ecf0f1')
         .attr('font-size', '13px')
         .attr('font-weight', '600')
         .text('Satellite View');
 
+    // Toggle switch - position adjusted: moved UP 5px and LEFT 10px
     const switchGroup = toggleGroup.append('g')
-        .attr('transform', 'translate(140, 8)');
+        .attr('transform', 'translate(130, 3)'); // Changed from (140, 8) to (130, 3)
 
+    // Toggle background (small rectangle for switch only)
     switchGroup.append('rect')
         .attr('width', 44)
         .attr('height', 24)
@@ -84,6 +90,7 @@ export function createSatelliteToggle(svg, projection) {
         event.preventDefault();
         
         console.log('🔄 Satellite toggle clicked');
+        console.log('📊 Currently tracked satellite counties:', Array.from(satelliteCounties));
         
         // Check if any counties are selected (using the imported array)
         if (!selectedCounties || selectedCounties.length === 0) {
@@ -100,13 +107,22 @@ export function createSatelliteToggle(svg, projection) {
             .attr('cx', isSatelliteMode ? 32 : 12)
             .attr('fill', isSatelliteMode ? '#2ecc71' : 'white');
         
+        // Update toggle switch background color
+        switchGroup.select('rect')
+            .attr('fill', isSatelliteMode ? '#34495e' : '#7f8c8d');
+        
+        // Update button background color when toggled
         toggleGroup.select('rect')
-            .attr('fill', isSatelliteMode ? '#34495e' : '#2c3e50');
+            .attr('fill', isSatelliteMode ? '#1a252f' : '#2c3e50'); // Darker when active
         
         if (isSatelliteMode) {
+            // Turn ON satellite for currently selected counties
             await showSatelliteInlay(svg);
         } else {
-            hideSatelliteInlay(svg);
+            // Turn OFF satellite only for currently selected counties
+            selectedCounties.forEach(county => {
+                hideSatelliteInlay(svg, county.FIPS);
+            });
         }
     });
 
@@ -114,29 +130,40 @@ export function createSatelliteToggle(svg, projection) {
     return toggleGroup;
 }
 
-// Rest of the file remains exactly the same as before...
-// [All the rest of your existing code - showSatelliteInlay, hideSatelliteInlay, etc.]
-
 async function showSatelliteInlay(svg) {
     console.log('🛰️ showSatelliteInlay called');
     console.log('📊 Number of selected counties:', selectedCounties.length);
+    console.log('📊 Already have satellite view:', Array.from(satelliteCounties));
     
-    if ((!selectedCounty && (!selectedCounties || selectedCounties.length === 0)) || !currentProjection) {
+    // Check which selected counties already have satellite view
+    const newCounties = selectedCounties.filter(county => !satelliteCounties.has(county.FIPS));
+    const existingCounties = selectedCounties.filter(county => satelliteCounties.has(county.FIPS));
+    
+    if (existingCounties.length > 0) {
+        console.log(`⚠️ ${existingCounties.length} counties already have satellite view:`, 
+            existingCounties.map(c => c.County));
+    }
+    
+    if (newCounties.length === 0) {
+        console.log('✅ All selected counties already have satellite view');
+        return;
+    }
+    
+    if (!currentProjection) {
         console.error('❌ Missing required data');
         return;
     }
     
     try {
-        // Get the GeoJSON features for all selected counties
-        // We need to find the GeoJSON features that match the selected counties
+        // Get the GeoJSON features for NEW selected counties only
         const pathGenerator = d3.geoPath().projection(currentProjection);
         
         // Get all map layers to find the GeoJSON features
         const allMapLayers = svg.selectAll('path.map-layer');
         const selectedFeatures = [];
         
-        // For each selected county, find its GeoJSON feature
-        selectedCounties.forEach(selectedCountyData => {
+        // For each NEW selected county, find its GeoJSON feature
+        newCounties.forEach(selectedCountyData => {
             const matchingLayer = allMapLayers.filter(d => 
                 d.properties && d.properties.FIPS === selectedCountyData.FIPS
             );
@@ -154,16 +181,16 @@ async function showSatelliteInlay(svg) {
             throw new Error('Could not find GeoJSON features for selected counties');
         }
         
-        console.log(`✅ Found ${selectedFeatures.length} GeoJSON features`);
+        console.log(`✅ Found ${selectedFeatures.length} NEW GeoJSON features`);
         
-        // Calculate combined bounds for all selected counties
+        // Calculate combined bounds for NEW selected counties only
         const combinedBounds = getCombinedLatLngBounds(selectedFeatures);
         if (!combinedBounds) {
             throw new Error('Could not calculate combined bounds');
         }
         
         const { south, north, west, east } = combinedBounds;
-        console.log('📍 Combined bounds:', {
+        console.log('📍 Combined bounds for new counties:', {
             south: south.toFixed(6),
             north: north.toFixed(6),
             west: west.toFixed(6),
@@ -208,16 +235,20 @@ async function showSatelliteInlay(svg) {
             console.warn('⚠️ Could not test URL (CORS or network issue), proceeding anyway...');
         }
         
-        // Remove any existing clip path and inlay
-        svg.selectAll('defs').remove();
-        svg.selectAll('.satellite-inlay-group').remove();
+        // Get existing defs or create new ones
+        let defs = svg.select('defs');
+        if (defs.empty()) {
+            defs = svg.append('defs');
+        }
         
-        // Create a clipPath that combines all selected counties
-        const defs = svg.append('defs');
-        countyClipPath = defs.append('clipPath')
-            .attr('id', 'county-clip-path');
+        // Get existing clipPath or create new one
+        let countyClipPath = defs.select('#county-clip-path');
+        if (countyClipPath.empty()) {
+            countyClipPath = defs.append('clipPath')
+                .attr('id', 'county-clip-path');
+        }
         
-        // Add a path for each selected county to the clip path
+        // Add paths for NEW counties to the clip path
         selectedFeatures.forEach(feature => {
             const countyPath = pathGenerator(feature);
             if (countyPath) {
@@ -226,7 +257,7 @@ async function showSatelliteInlay(svg) {
             }
         });
         
-        console.log(`✅ Created combined clip path with ${selectedFeatures.length} counties`);
+        console.log(`✅ Added ${selectedFeatures.length} new counties to clip path`);
         
         // Calculate combined SVG bounds for positioning
         let combinedSvgBounds = null;
@@ -261,7 +292,8 @@ async function showSatelliteInlay(svg) {
         // Create satellite inlay group in the zoom group
         const zoomGroup = svg.select('.zoom-group');
         const inlayGroup = zoomGroup.append('g')
-            .attr('class', 'satellite-inlay-group');
+            .attr('class', 'satellite-inlay-group')
+            .attr('data-counties', newCounties.map(c => c.FIPS).join(',')); // Track which counties
         
         // Convert geographic bounds to SVG coordinates
         const sw = currentProjection([west, south]);
@@ -292,32 +324,23 @@ async function showSatelliteInlay(svg) {
             throw new Error('Could not project combined bounds to SVG coordinates');
         }
         
-        // Add borders around each selected county
-        selectedFeatures.forEach(feature => {
-            const countyPath = pathGenerator(feature);
-            inlayGroup.append('path')
-                .attr('class', 'satellite-border')
-                .attr('d', countyPath)
-                .attr('fill', 'none')
-                .attr('stroke', '#FFD700')
-                .attr('stroke-width', 2)
-                .attr('stroke-dasharray', '4,2')
-                .attr('stroke-linecap', 'round')
-                .attr('pointer-events', 'none');
-        });
+        console.log(`✅ No yellow borders added (per request)`);
         
-        console.log(`✅ Added borders for ${selectedFeatures.length} counties`);
-        
-        // Hide original counties (make them transparent)
-        selectedCounties.forEach(county => {
+        // Hide original NEW counties (make fill transparent so satellite shows through)
+        newCounties.forEach(county => {
             const countyFIPS = county.FIPS;
             svg.selectAll('path.map-layer')
                 .filter(d => d.properties.FIPS === countyFIPS)
-                .style('fill-opacity', 0)
-                .style('stroke-opacity', 0);
+                .style('fill-opacity', 0); // Just hide fill, keep everything else
         });
         
-        console.log(`✅ Hid ${selectedCounties.length} original counties`);
+        console.log(`✅ Hid ${newCounties.length} new original counties`);
+        
+        // Add new counties to tracking set
+        newCounties.forEach(county => {
+            satelliteCounties.add(county.FIPS);
+        });
+        console.log(`📡 Updated satellite counties: ${Array.from(satelliteCounties)}`);
         
         // Add loading indicator at the center of combined area
         const loadingText = svg.append('text')
@@ -331,7 +354,7 @@ async function showSatelliteInlay(svg) {
             .attr('paint-order', 'stroke')
             .attr('stroke', '#000')
             .attr('stroke-width', '3px')
-            .text(`Loading satellite for ${selectedCounties.length} county${selectedCounties.length > 1 ? 's' : ''}...`);
+            .text(`Loading satellite for ${newCounties.length} new county${newCounties.length > 1 ? 's' : ''}...`);
         
         // Load image
         const img = new Image();
@@ -339,12 +362,20 @@ async function showSatelliteInlay(svg) {
         
         return new Promise((resolve, reject) => {
             img.onload = function() {
-                console.log(`✅ Image loaded successfully for ${selectedCounties.length} counties`);
+                console.log(`✅ Image loaded successfully for ${newCounties.length} new counties`);
                 loadingText.remove();
                 satelliteImage
                     .transition()
                     .duration(800)
                     .attr('opacity', 1);
+                
+                // CRITICAL FIX: Ensure interaction layer is on top of satellite
+                const interactionLayer = svg.select('.interaction-layer');
+                if (!interactionLayer.empty()) {
+                    interactionLayer.raise(); // Move to front (SVG paint order)
+                    console.log('✅ Interaction layer moved to front');
+                }
+                
                 resolve();
             };
             
@@ -352,6 +383,11 @@ async function showSatelliteInlay(svg) {
                 console.error(`❌ Failed to load image:`, err);
                 loadingText.remove();
                 satelliteImage.remove();
+                
+                // Remove failed counties from tracking
+                newCounties.forEach(county => {
+                    satelliteCounties.delete(county.FIPS);
+                });
                 
                 // Show error message
                 const errorMsg = svg.append('text')
@@ -361,7 +397,7 @@ async function showSatelliteInlay(svg) {
                     .attr('fill', '#ff6b6b')
                     .attr('font-size', '12px')
                     .attr('font-weight', 'bold')
-                    .text(`Satellite failed for ${selectedCounties.length} counties`);
+                    .text(`Satellite failed for ${newCounties.length} counties`);
                 
                 // Add retry button
                 const retryGroup = svg.append('g')
@@ -397,8 +433,15 @@ async function showSatelliteInlay(svg) {
         
     } catch (error) {
         console.error('💥 Error in showSatelliteInlay:', error);
+        
+        // Remove failed counties from tracking
+        if (selectedCounties) {
+            selectedCounties.forEach(county => {
+                satelliteCounties.delete(county.FIPS);
+            });
+        }
+        
         isSatelliteMode = false;
-        hideSatelliteInlay(svg);
         alert(`Failed to load satellite for selected counties: ${error.message}. Check console for details.`);
     }
 }
@@ -520,31 +563,51 @@ function calculateOptimalZoom(bounds) {
     return 12;                     // Tiny combined area
 }
 
-function showFallbackTerrain(svg, countyPaths, countyBounds) {
-    // Fallback not updated for multiple counties - will use original behavior
-    // You can expand this if needed
-}
-
-function hideSatelliteInlay(svg) {
-    // Remove satellite inlay group
-    svg.selectAll('.satellite-inlay-group').remove();
-    
-    // Remove clip path
-    svg.selectAll('defs').remove();
-    
-    // Remove retry button if it exists
-    svg.selectAll('.retry-button').remove();
-    
-    // Restore original county fill opacity for all selected counties
-    if (selectedCounties && selectedCounties.length > 0) {
-        selectedCounties.forEach(county => {
-            const countyFIPS = county.FIPS;
-            svg.selectAll('path.map-layer')
-                .filter(d => d.properties.FIPS === countyFIPS)
-                .style('fill-opacity', 1)
-                .style('stroke-opacity', 1);
+function hideSatelliteInlay(svg, countyFIPS = null) {
+    if (countyFIPS) {
+        console.log(`👋 Hiding satellite view for county FIPS: ${countyFIPS}`);
+        
+        // Remove from tracking set
+        satelliteCounties.delete(countyFIPS);
+        console.log(`📡 Updated satellite counties: ${Array.from(satelliteCounties)}`);
+        
+        // Find and remove the satellite inlay group that contains this county
+        const allInlayGroups = svg.selectAll('.satellite-inlay-group');
+        
+        allInlayGroups.each(function() {
+            const group = d3.select(this);
+            const countiesAttr = group.attr('data-counties');
+            if (countiesAttr && countiesAttr.includes(countyFIPS)) {
+                // This group contains the county - remove it
+                group.remove();
+                console.log(`✅ Removed satellite group containing county ${countyFIPS}`);
+            }
         });
-        console.log(`✅ Restored ${selectedCounties.length} original counties`);
+        
+        // Restore that specific county's original appearance
+        svg.selectAll('path.map-layer')
+            .filter(d => d.properties.FIPS === countyFIPS)
+            .style('fill-opacity', 1);
+        
+        console.log(`✅ Restored original appearance for county ${countyFIPS}`);
+        
+    } else {
+        // Original behavior: hide all (only when toggling off globally or resetting)
+        console.log('👋 Hiding ALL satellite views');
+        
+        svg.selectAll('.satellite-inlay-group').remove();
+        svg.selectAll('defs').remove();
+        svg.selectAll('.retry-button').remove();
+        
+        // Restore ALL counties that had satellite view
+        satelliteCounties.forEach(fips => {
+            svg.selectAll('path.map-layer')
+                .filter(d => d.properties.FIPS === fips)
+                .style('fill-opacity', 1);
+        });
+        
+        satelliteCounties.clear();
+        console.log('✅ Cleared all satellite tracking');
     }
     
     // Remove loading indicator if it exists
@@ -612,30 +675,30 @@ export function setSelectedCounty(countyFeature, svg) {
             .style('opacity', 1)
             .style('pointer-events', 'all');
         
-        toggleButton.select('rect')
-            .attr('fill', '#2c3e50');
+        // IMPORTANT: DO NOT automatically hide/show satellite view when selecting new counties
+        // Satellite view persists until explicitly toggled off
         
-        // If already in satellite mode, update the view
-        if (isSatelliteMode) {
-            hideSatelliteInlay(svg);
-            showSatelliteInlay(svg);
-        }
     } else {
         toggleButton
-            .style('opacity', 0.5)
-            .style('pointer-events', 'none');
-        
-        toggleButton.select('rect')
-            .attr('fill', '#95a5a6');
+            .style('opacity', 1) // Changed from 0.5 to 1 (no transparency)
+            .style('pointer-events', 'none'); // Still disable clicks
         
         if (isSatelliteMode) {
             isSatelliteMode = false;
-            hideSatelliteInlay(svg);
             
             const toggleCircle = toggleButton.select('circle');
             toggleCircle
                 .attr('cx', 12)
                 .attr('fill', 'white');
+            
+            // Also reset the toggle switch background
+            const switchGroup = toggleButton.select('g');
+            switchGroup.select('rect')
+                .attr('fill', '#7f8c8d');
+            
+            // Reset button background color
+            toggleButton.select('rect')
+                .attr('fill', '#2c3e50');
         }
     }
 }
@@ -645,25 +708,44 @@ export function getSatelliteMode() {
 }
 
 export function resetSatelliteMode(svg) {
+    console.log('🔄 resetSatelliteMode called - clearing ALL satellite views');
     isSatelliteMode = false;
     selectedCounty = null;
-    hideSatelliteInlay(svg);
+    
+    // Hide ALL satellite inlays
+    hideSatelliteInlay(svg); // No parameter = hide all
     
     const toggleButton = svg.select('.satellite-toggle');
     if (!toggleButton.empty()) {
-        toggleButton.style('opacity', 0.5);
-        toggleButton.style('pointer-events', 'none');
+        toggleButton.style('opacity', 1);
+        toggleButton.style('pointer-events', 'none'); // Still disable when no selection
         
         const toggleCircle = toggleButton.select('circle');
         toggleCircle
             .attr('cx', 12)
             .attr('fill', 'white');
         
+        // Reset the toggle switch background
+        const switchGroup = toggleButton.select('g');
+        switchGroup.select('rect')
+            .attr('fill', '#7f8c8d');
+        
+        // Reset button background color
         toggleButton.select('rect')
-            .attr('fill', '#95a5a6');
+            .attr('fill', '#2c3e50');
     }
 }
 
 export function initializeSatelliteToggle(svg, projection) {
     return createSatelliteToggle(svg, projection);
+}
+
+// Helper function to check satellite status
+export function hasSatelliteView(fips) {
+    return satelliteCounties.has(fips);
+}
+
+// Get all counties with satellite view
+export function getSatelliteCounties() {
+    return Array.from(satelliteCounties);
 }
