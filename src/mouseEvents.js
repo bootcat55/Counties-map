@@ -38,7 +38,10 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
             const alreadySelected = selectedCounties.find(c => c.FIPS === d.properties.FIPS);
             if (alreadySelected) {
                 selectedCounties = selectedCounties.filter(c => c.FIPS !== d.properties.FIPS);
-                d3.select(this).attr("stroke", "none").attr("stroke-width", 0);
+                d3.select(this)
+                    .attr("stroke", "none")
+                    .attr("stroke-width", 0)
+                    .attr("vector-effect", null); // Remove the non-scaling property
                 
                 // If deselecting the last county, clear satellite selection
                 if (selectedCounties.length === 0) {
@@ -46,7 +49,11 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
                 }
             } else {
                 selectedCounties.push(d.properties);
-                d3.select(this).attr("stroke", "white").attr("stroke-width", 2);
+                
+                d3.select(this)
+                    .attr("stroke", "white")
+                    .attr("stroke-width", 2)
+                    .attr("vector-effect", "non-scaling-stroke"); // This prevents scaling with zoom
                 
                 // Store original votes for bar chart comparison if not already stored
                 if (!d.properties.originalVotes) {
@@ -118,7 +125,9 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
                 stateCounties.forEach(county => {
                     const countyPath = svg.selectAll("path.interaction-layer")
                         .filter(d => d.properties.FIPS === county.FIPS);
-                    countyPath.attr("stroke", "none").attr("stroke-width", 0);
+                    countyPath.attr("stroke", "none")
+                        .attr("stroke-width", 0)
+                        .attr("vector-effect", null);
                 });
                 
                 // Clear satellite selection since all counties are deselected
@@ -144,7 +153,9 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
                 stateCounties.forEach(county => {
                     const countyPath = svg.selectAll("path.interaction-layer")
                         .filter(d => d.properties.FIPS === county.FIPS);
-                    countyPath.attr("stroke", "white").attr("stroke-width", 2);
+                    countyPath.attr("stroke", "white")
+                        .attr("stroke-width", 2)
+                        .attr("vector-effect", "non-scaling-stroke"); // Add this
                 });
             }
 
@@ -235,7 +246,8 @@ export function clearAllSelections(svg) {
     // Clear visual selections
     svg.selectAll("path.interaction-layer")
         .attr("stroke", "none")
-        .attr("stroke-width", 0);
+        .attr("stroke-width", 0)
+        .attr("vector-effect", null);
     
     // Clear selected counties array
     selectedCounties = [];

@@ -55,7 +55,7 @@ export function createSatelliteToggle(svg, projection) {
 
     // Label - position adjusted for rectangle
     toggleGroup.append('text')
-        .attr('x', 80) // Adjusted for rectangle (was 40)
+        .attr('x', 40) // Adjusted for rectangle (was 40)
         .attr('y', 22)
         .attr('fill', '#ecf0f1')
         .attr('font-size', '13px')
@@ -64,7 +64,7 @@ export function createSatelliteToggle(svg, projection) {
 
     // Toggle switch - position adjusted: moved UP 5px and LEFT 10px
     const switchGroup = toggleGroup.append('g')
-        .attr('transform', 'translate(130, 3)'); // Changed from (140, 8) to (130, 3)
+        .attr('transform', 'translate(135, 6)'); // Changed from (140, 8) to (130, 3)
 
     // Toggle background (small rectangle for switch only)
     switchGroup.append('rect')
