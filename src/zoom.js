@@ -1,5 +1,8 @@
 import * as d3 from 'd3';
 
+// No need to track zoom state or callbacks for stroke updates
+// since stroke will scale automatically with vector-effect: null
+
 export function createZoomControls(svg, width, height) {
     // Get or create the zoom group
     let zoomGroup = svg.select("g.zoom-group");
@@ -22,8 +25,7 @@ export function createZoomControls(svg, width, height) {
     function zoomed(event) {
         const { transform } = event;
         zoomGroup.attr("transform", transform);
-        zoomGroup.selectAll('path')
-            .attr('stroke-width', 1 / transform.k);
+        // No need to update strokes - they scale automatically
     }
 
     const zoomControlsContainer = d3.select("#county-map")
@@ -51,6 +53,7 @@ export function createZoomControls(svg, width, height) {
             svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
         });
 
-    // Return the zoom instance for external control
     return zoom;
 }
+
+// Remove unnecessary exports - they're not needed anymore

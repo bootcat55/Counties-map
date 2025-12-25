@@ -2,25 +2,25 @@ import * as d3 from 'd3';
 import { updateTooltip, hideTooltip, updateInfoPane } from './paneSetup.js';
 import { countyDataArray } from './voteManager.js';
 import { setupSliders } from './sliderHandler.js';
-import { setSelectedCounty } from './geoMap.js'; // Import the setSelectedCounty function
+import { setSelectedCounty } from './geoMap.js';
 
 // Export selectedCounties array
-export let selectedCounties = []; // Track selected counties
+export let selectedCounties = [];
 
 export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders, buttons, svg, infoPane, projection, geoData) {
-    const dropdown = document.getElementById('data-year-selector'); // Get the dropdown element
+    const dropdown = document.getElementById('data-year-selector');
 
     interactionLayer.selectAll("path")
         .on("mouseover", function (event, d) {
             if (dropdown && dropdown.classList.contains("open")) {
-                hideTooltip(tooltip); // Ensure tooltip is hidden when dropdown is open
+                hideTooltip(tooltip);
                 return;
             }
             updateTooltip(tooltip, d, event);
         })
         .on("mousemove", function (event) {
             if (dropdown && dropdown.classList.contains("open")) {
-                hideTooltip(tooltip); // Ensure tooltip is hidden when dropdown is open
+                hideTooltip(tooltip);
                 return;
             }
             tooltip.style("left", (event.pageX + 10) + "px")
@@ -41,7 +41,7 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
                 d3.select(this)
                     .attr("stroke", "none")
                     .attr("stroke-width", 0)
-                    .attr("vector-effect", null); // Remove the non-scaling property
+                    .attr("vector-effect", null);
                 
                 // If deselecting the last county, clear satellite selection
                 if (selectedCounties.length === 0) {
@@ -50,10 +50,12 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
             } else {
                 selectedCounties.push(d.properties);
                 
+                // Use non-scaling stroke to stay in screen pixels
                 d3.select(this)
                     .attr("stroke", "white")
-                    .attr("stroke-width", 2)
-                    .attr("vector-effect", "non-scaling-stroke"); // This prevents scaling with zoom
+                    .attr("stroke-width", 1) // Start at 1px
+                    .attr("stroke-opacity", 0.9)
+                    .attr("vector-effect", "non-scaling-stroke"); // Critical!
                 
                 // Store original votes for bar chart comparison if not already stored
                 if (!d.properties.originalVotes) {
@@ -154,8 +156,9 @@ export function setupMouseEvents(interactionLayer, tooltip, updatePane, sliders,
                     const countyPath = svg.selectAll("path.interaction-layer")
                         .filter(d => d.properties.FIPS === county.FIPS);
                     countyPath.attr("stroke", "white")
-                        .attr("stroke-width", 2)
-                        .attr("vector-effect", "non-scaling-stroke"); // Add this
+                        .attr("stroke-width", 1) // Start at 1px
+                        .attr("stroke-opacity", 0.9)
+                        .attr("vector-effect", "non-scaling-stroke"); // Critical!
                 });
             }
 
@@ -198,9 +201,14 @@ function updateCountySelection(svg, counties, isSelected) {
     counties.forEach(county => {
         const countyPath = svg.selectAll("path.interaction-layer").filter(d => d.properties.FIPS === county.FIPS);
         if (isSelected) {
-            countyPath.attr("stroke", "white").attr("stroke-width", 2);
+            countyPath.attr("stroke", "white")
+                .attr("stroke-width", 1)
+                .attr("stroke-opacity", 0.9)
+                .attr("vector-effect", "non-scaling-stroke");
         } else {
-            countyPath.attr("stroke", "none").attr("stroke-width", 0);
+            countyPath.attr("stroke", "none")
+                .attr("stroke-width", 0)
+                .attr("vector-effect", null);
         }
     });
 }
