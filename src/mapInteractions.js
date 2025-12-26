@@ -349,6 +349,7 @@ export function initializeMapInteractions() {
                 .attr("fill", "none")
                 .attr("stroke", "#000")
                 .attr("stroke-width", 1.5)
+                .attr("vector-effect", "non-scaling-stroke") // ADD THIS LINE
                 .attr("pointer-events", "none");
         });
 
